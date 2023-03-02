@@ -1,0 +1,368 @@
+---
+title: "Krill Length 48.1"
+author: "Mauricio Mardones"
+date:  "`r format(Sys.time(), '%d %B, %Y')`"
+bibliography: seaice.bib
+csl: apa.csl
+link-citations: yes
+linkcolor: blue
+output:
+  html_document:
+    toc: true
+    toc_deep: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    theme: cosmo
+    fontsize: 0.9em
+    linestretch: 1.7
+    html-math-method: katex
+    self-contained: true
+    code-tools: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Background
+
+
+The following document intends to carry out a complementary methodological analysis to correlate environmental variables with the population dynamics of krill (*Euphausia superba*).
+
+
+# Objective 
+
+Once the correlation and effects on the population and/or fishing indicators on krill have been verified, this analysis aims to have a time series of the environmental variable to incorporate into the stock assessment process.
+
+
+
+```{r message=FALSE}
+library(reshape2)
+library(tidyverse)
+library(plyr)
+library(lubridate)
+library(lmerTest)
+library(raster)
+library(sf)
+library(CCAMLRGIS)
+library(here)
+library(easystats) # analisis estadisticos post
+library(ncdf4)
+library(readr)
+library(data.table)
+library(marmap)
+library(mapproj)
+library(maps)
+library(tmap)
+library(tmaptools)
+library(ggridges)
+```
+
+## Estructura de tallas
+
+Otra pieza impportante de imformacion para una evaluacion de stock, es la referida a los componentes biologicos como tallas y pesos medios a traves de las areas y años. Para ello, exploraremos los datos biologicosy  preparaemos la salida para pasarlo al SS3.
+
+la idea es correlacionar tallas medias con SIC.
+
+Primero una exploración.
+
+The object `ohbio2` come from data exploration analysis  in data request CCAMLR data. This objetc have bio information from krill.
+
+```{r}
+load("DataLengthKrill.RData")
+ls()
+#cargo objeto
+
+ohbio2 <- get("ohbio2")
+names(ohbio2)
+```
+
+
+El data frame que corresponde usar es el de *"ohbio2"*
+
+(atencion!. The ggjoy package has been deprecated. Please switch over to ggridges.)
+
+```{r  fig.align="center", message=F, warning=F}
+jz <- ggplot(ohbio2, aes(x=length_total_cm, y = as.factor(season_ccamlr),
+                         fill=asd_code))+
+  #geom_joy(alpha=0.9) +
+  geom_density_ridges(stat = "binline", bins = 30, 
+                      scale = 0.95, draw_baseline = FALSE)+
+  facet_wrap(.~asd_code, ncol=3) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, by = 1))+
+  scale_y_discrete(breaks = seq(from = 2000, to = 2020, by = 1))+
+  scale_fill_viridis_d(name="SubArea")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlim(0,10)+
+  xlab("Longitud (cm.)")+
+  ylab("")
+jz
+```
+Estructura de tallas por año y por nacionalidad
+
+
+```{r fig.align="center", message=F, warning=F}
+jn <- ggplot(ohbio2 , aes(x=length_total_cm, y = as.factor(season_ccamlr),
+                         fill=asd_code))+
+  geom_density_ridges(alpha=0.5, stat = "binline") + 
+  facet_wrap(.~vessel_nationality_code, ncol=6) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, by = 1))+
+  scale_y_discrete(breaks = seq(from = 2000, to = 2020, by = 2))+
+  scale_fill_viridis_d(option = "C", name="Nacionalidad")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlim(0,10)+
+  xlab("Longitud (cm.)")+
+  ylab("")
+jn
+```
+
+
+
+## Estimar % bajo de reclutas de krill
+
+```{r}
+ohbpor= ohbio2 %>% 
+  dplyr::mutate(inf_112=(length_total_cm < 3.6)) %>% # new column TRUE if value is below 112
+  dplyr::group_by(season_ccamlr, 
+           asd_code, 
+           vessel_nationality_code) %>%
+  dplyr::summarise(pct=round(100*sum(inf_112)/n())) # divide the number or rows where value is below 112 by the total number of rows
+
+pct100<- ggplot(ohbpor, 
+               aes(season_ccamlr,pct))+
+    geom_point(alpha=0.5, shape=21, color=2, fill=2, show.legend = T) +
+    stat_smooth(method= "loess", colour=2)+
+    scale_size(range = c(-4,8)) +
+    theme_bw()+ 
+    facet_wrap(.~asd_code)+
+    scale_x_continuous(breaks = seq(from = 2000, to = 2020, by = 2))+
+    #scale_y_discrete(breaks = seq(from = 1, to = 13, by = 1))+
+    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
+    guides(fill = guide_legend(reverse=F))+
+    scale_fill_viridis_c(option="E")+
+    ylab("") +
+    xlab("") +
+    ggtitle("Porcentaje Ind bajo talla recluta 3.6 mm.")
+pct100
+```
+
+Ahora saco tallas medias por distintas variables
+
+
+```{r, fig.align="center"}
+meant <-ohbio2 %>% 
+  dplyr::group_by(season_ccamlr, 
+           asd_code) %>%
+  dplyr::summarise(avg=mean(length_total_cm))
+glimpse(meant)
+```
+
+
+```{r, fig.align="center", message=F}
+pmea <- ggplot(meant, 
+               aes(season_ccamlr,avg))+
+    geom_point(shape=21, fill=meant$asd_code, show.legend = T) +
+    stat_smooth(method= "lm", colour='#253494')+
+    scale_size(range = c(-4,8)) +
+    theme_bw()+ 
+    facet_wrap(.~asd_code)+
+    scale_x_continuous(breaks = seq(from = 2000, to = 2020, by = 2))+
+    #scale_y_discrete(breaks = seq(from = 1, to = 13, by = 1))+
+    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
+    guides(fill = guide_legend(reverse=F))+
+    scale_fill_viridis_c(option="E")+
+    ylim(3,7.5)+
+    ylab("") +
+    xlab("") +
+    ggtitle("Lenght Mean Krill fishery")
+pmea
+```
+## Ahora saco las tallas por cada subarea para el modelado
+
+Esta estructura de bins esta supeditada a revision. Este tipo de datos entra al modelado de la poblacion.
+
+```{r}
+t481 <- ohbio2 %>% 
+  filter(asd_code=="481")
+
+```
+
+y genero los datos para entrada al modelo. Deben ser bines de milimetros (0.2). Esto en funcion de representar mejor las dinámicas de crecimiento del Krill.
+
+Por cada subarea
+
+- 48.1
+
+```{r eval=FALSE}
+t481$cat_long <- as.numeric(as.character(cut(x = t481$Longitud, 
+                                             breaks = seq(0,10,0.2),
+                                             labels = seq(0,9.8,0.2), right = FALSE)))
+tt481 <- table(t481$season_ccamlr, t481$cat_long )
+
+tt481
+
+
+# A su vez puedo generar el archivo por separado
+write.csv(tt481, "talla481.csv", sep = ",", row.names = TRUE)
+```
+
+## Tallas engrilladas
+
+ahora prceso los datos de tallas dentro de la grilla `Grid2`. debo sacar los datos `NA`
+
+```{r eval=FALSE}
+tagri <- st_as_sf(t481 %>% 
+                    drop_na(longitude_haul_start),
+                  coords = c("longitude_haul_start",
+                                     "latitude_haul_start"),
+                  crs = 4326) 
+
+tagri2 <- tagri %>% 
+  select(2, 8, 29, 31) 
+
+```
+
+
+Ploteo los datos para
+```{r eval=FALSE}
+# join data to grid; make sure to join points to grid
+# the first object drives the output geometry
+tagri3 <- Grid2 %>%
+  st_join(tagri2) %>% 
+  group_by(cellid)
+```
+
+
+```{r eval=FALSE}
+masl <- ggplot() +
+  geom_sf(data=tagri3 %>% 
+            filter(avg>0) %>% 
+            filter(season_ccamlr<2008),  aes(fill = avg), 
+          alpha=0.7, color=NA) +
+  geom_sf(data = Grid2,  fill=NA, color=NA) +
+  geom_sf(data = rc3) +
+  scale_fill_fermenter(n.breaks = 8, 
+                       palette = 8)+
+  coord_sf() +
+  scale_alpha(guide="none")+
+  xlab(expression(paste(Longitude^o,~'O'))) +
+  ylab(expression(paste(Latitude^o,~'S')))+
+  guides(fill=guide_legend("Mean size (cm.)"))+
+  facet_wrap(.~season_ccamlr, ncol=3)+
+  theme(panel.background = element_rect(fill = 'aliceblue'),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())+
+  ggtitle("Mean Length Krill Fishery")
+masl
+```
+
+## Pesos Medios
+
+Ahora procedo con el mismo método para los datos de pesos medios
+
+```{r echo=T, eval=F}
+dens <- kb %>% 
+  group_by(SEASON) %>% 
+  summarise(mean_den=mean(STANDARDISED_KRILL_UNDER_1M2))
+
+pegri <- st_as_sf(dens %>% 
+                    drop_na(longitude_haul_start),
+                  coords = c("longitude_haul_start",
+                                     "latitude_haul_start"),
+                  crs = 4326) 
+```
+
+
+Ploteo los datos para
+```{r eval=FALSE}
+# join data to grid; make sure to join points to grid
+# the first object drives the output geometry
+pegri2 <- Grid2 %>%
+  st_join(pegri) %>% 
+  group_by(cellid)
+```
+
+
+## GAM
+
+Ahora junto las bases de `result` (SIC) y  `tagri3` (tallas medias)
+
+```{r eval=FALSE, echo=TRUE}
+tase <- st_join(result, tagri3, join = st_nearest_feature, left = T)
+```
+
+Cambio las variables a factores para proceder.
+
+
+```{r eval=FALSE, echo=TRUE}
+tase1 <- tase %>%
+  dplyr::mutate_if(is.integer,as.factor) %>% 
+  dplyr::mutate_if(is.character,as.factor) 
+
+hist(tase$seaice, breaks = 30)
+
+fit=lm(avg~anio,data=tase)
+```
+
+
+```{r eval=FALSE, echo=TRUE}
+summary(fit)     
+tase2 <- tase %>% 
+  dplyr::group_by(season_ccamlr) %>% 
+  dplyr::summarise(avg1=mean(length_total_cm))
+
+ggplot(tase2,aes(y=avg1,x=season_ccamlr))+
+  geom_point(col="yellow")+
+  geom_smooth(method="loess", col="yellow")+
+  geom_label(aes(label = season_ccamlr),
+                 position = position_dodge(1.2),
+    vjust = -0.3)+
+  theme_bw()+
+  labs(x="", y= "Mean Length krill")
+
+
+require(gam)
+#ISLR package contains the 'Wage' Dataset
+
+ 
+gam1<-gam(length_total_cm~anio+seaice+cell ,data = tase)
+#Plotting the Model
+par(mfrow=c(1,3)) #to partition the Plotting Window
+plot(gam1,se = TRUE) 
+#se stands for standard error Bands
+```
+
+```{r eval=FALSE, echo=TRUE}
+glmseta<-glm(avg ~ anio+seaice,family = gaussian,  data=tase1)
+
+
+glm_mod0<-glm(length_total_cm ~ + anio, data= tase,
+              family= gaussian)
+
+glm_mod1<-glm(length_total_cm ~ + anio + seaice,
+              data= tase, family= gaussian(link="log"))
+summary(glm_mod0)
+anova(glm_mod0)
+plot(glm_mod0)
+```
+
+Probar datos con RaadTools library [@Raadtools2022]
+
+
+
+# References
+
+Sea ice data is from Giovanni NASA browser 
+(https://giovanni.gsfc.nasa.gov/)
+ref: Global Modeling and Assimilation Office (GMAO) (2015), 
+
+MERRA-2 tavgM_2d_flx_Nx: 2d,Monthly mean,Time-Averaged,Single-Level,
+Assimilation,Surface Flux Diagnostics V5.12.4, 
+Greenbelt, MD, USA, 
+Goddard Earth Sciences Data and Information Services Center (GES DISC), 
+Accessed: [06 July 2022], 10.5067/0JRLVL8YV2Y4
