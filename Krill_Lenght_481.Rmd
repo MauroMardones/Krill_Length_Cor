@@ -60,13 +60,13 @@ library(tmaptools)
 library(ggridges)
 ```
 
-## Estructura de tallas
+## Length structure krill 48 subarea
 
-Otra pieza impportante de imformacion para una evaluacion de stock, es la referida a los componentes biologicos como tallas y pesos medios a traves de las areas y años. Para ello, exploraremos los datos biologicosy  preparaemos la salida para pasarlo al SS3.
+Another important piece of information for a stock evaluation refers to the biological components such as average sizes and weights across areas and years. To do this, we will explore the biological data and prepare the output to pass it to SS3.
 
-la idea es correlacionar tallas medias con SIC.
+the idea is to correlate mean lengths with SIC.
 
-Primero una exploración.
+Some exploratory plot.
 
 The object `ohbio2` come from data exploration analysis  in data request CCAMLR data. This objetc have bio information from krill.
 
@@ -79,8 +79,6 @@ ohbio2 <- get("ohbio2")
 names(ohbio2)
 ```
 
-
-El data frame que corresponde usar es el de *"ohbio2"*
 
 (atencion!. The ggjoy package has been deprecated. Please switch over to ggridges.)
 
@@ -123,17 +121,18 @@ jn
 ```
 
 
-
-## Estimar % bajo de reclutas de krill
+## Recruit estimate (% Low Recruit length) [@Perry2019]
 
 ```{r}
 ohbpor= ohbio2 %>% 
-  dplyr::mutate(inf_112=(length_total_cm < 3.6)) %>% # new column TRUE if value is below 112
-  dplyr::group_by(season_ccamlr, 
-           asd_code, 
-           vessel_nationality_code) %>%
-  dplyr::summarise(pct=round(100*sum(inf_112)/n())) # divide the number or rows where value is below 112 by the total number of rows
+  dplyr::mutate(inf_112=(length_total_cm < 3.6))
 
+%>% # new column TRUE if value is below 112
+  dplyr::summarise(pct=round(100*sum(inf_112)/n())) # divide the number or rows where value is below 112 by the total number of rows
+```
+
+
+```{r}
 pct100<- ggplot(ohbpor, 
                aes(season_ccamlr,pct))+
     geom_point(alpha=0.5, shape=21, color=2, fill=2, show.legend = T) +
@@ -160,7 +159,7 @@ meant <-ohbio2 %>%
   dplyr::group_by(season_ccamlr, 
            asd_code) %>%
   dplyr::summarise(avg=mean(length_total_cm))
-glimpse(meant)
+kableExtra::kable(meant)
 ```
 
 
@@ -190,7 +189,7 @@ Esta estructura de bins esta supeditada a revision. Este tipo de datos entra al 
 ```{r}
 t481 <- ohbio2 %>% 
   filter(asd_code=="481")
-
+glimpse(t481)
 ```
 
 y genero los datos para entrada al modelo. Deben ser bines de milimetros (0.2). Esto en funcion de representar mejor las dinámicas de crecimiento del Krill.
@@ -200,7 +199,7 @@ Por cada subarea
 - 48.1
 
 ```{r eval=FALSE}
-t481$cat_long <- as.numeric(as.character(cut(x = t481$Longitud, 
+t481$cat_long <- as.numeric(as.character(cut(x = t481$length_total_cm, 
                                              breaks = seq(0,10,0.2),
                                              labels = seq(0,9.8,0.2), right = FALSE)))
 tt481 <- table(t481$season_ccamlr, t481$cat_long )
@@ -224,7 +223,7 @@ tagri <- st_as_sf(t481 %>%
                   crs = 4326) 
 
 tagri2 <- tagri %>% 
-  select(2, 8, 29, 31) 
+  dplyr::select(2, 8, 29, 31) 
 
 ```
 
