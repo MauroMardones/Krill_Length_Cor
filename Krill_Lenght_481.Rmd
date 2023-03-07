@@ -60,6 +60,7 @@ library(maps)
 library(tmap)
 library(tmaptools)
 library(ggridges)
+library(here)
 ```
 
 ## Length structure krill 48 subarea
