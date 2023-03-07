@@ -22,7 +22,9 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE)
 ```
 
 
@@ -71,16 +73,41 @@ Some exploratory plot.
 The object `ohbio2` come from data exploration analysis  in data request CCAMLR data. This objetc have bio information from krill.
 
 ```{r}
-load("DataLengthKrill.RData")
-ls()
-#cargo objeto
-
-ohbio2 <- get("ohbio2")
-names(ohbio2)
+#datos entregados por secretaria de CCMLAR
+metadata <- load("~/DOCAS/Data/565_C1_KRI_2021-10-01/DATA_PRODUCT_565.RData")
+# Data procesada por MMardones
+#ohbio <- load("DataLengthKrill.RData")
+#ohbio
+metadata
 ```
 
 
-(atencion!. The ggjoy package has been deprecated. Please switch over to ggridges.)
+```{r}
+#cargo objeto
+meta <- get("METADATA")
+c1 <- get("C1")
+ohbio <- get("OBS_HAUL_BIOLOGY")
+names(ohbio)
+dim(c1)
+dim(ohbio)
+```
+
+Join data set  with master as `c1` set. This join is trought `obs_haul_id` variable
+```{r}
+ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")
+dim(ohbio2)
+```
+
+Test how many register have by year. In this case, `length_total_cm` by year.
+
+```{r}
+coutlength <-ohbio2 %>% 
+  drop_na(length_total_cm) %>% 
+  dplyr::group_by(season_ccamlr) %>%
+  dplyr::summarise(avg=mean(length_total_cm))
+kableExtra::kable(coutlength, format = "html")
+```
+a quick glimse to all 48 subarea length composition from monitoring fisheries.
 
 ```{r  fig.align="center", message=F, warning=F}
 jz <- ggplot(ohbio2, aes(x=length_total_cm, y = as.factor(season_ccamlr),
@@ -104,14 +131,15 @@ Estructura de tallas por año y por nacionalidad
 
 
 ```{r fig.align="center", message=F, warning=F}
-jn <- ggplot(ohbio2 , aes(x=length_total_cm, y = as.factor(season_ccamlr),
+jn <- ggplot(ohbio2 , aes(x=length_total_cm, 
+                          y = as.factor(season_ccamlr),
                          fill=asd_code))+
   geom_density_ridges(alpha=0.5, stat = "binline") + 
-  facet_wrap(.~vessel_nationality_code, ncol=6) +   
+  facet_wrap(.~vessel_nationality_code, ncol=8) +   
   geom_vline(xintercept = 3.6, color = "red")+
   scale_x_continuous(breaks = seq(from = 1, to = 10, by = 1))+
-  scale_y_discrete(breaks = seq(from = 2000, to = 2020, by = 2))+
-  scale_fill_viridis_d(option = "C", name="Nacionalidad")+
+  scale_y_discrete(breaks = seq(from = 2001, to = 2020, by = 1))+
+  scale_fill_viridis_d(option = "F", name="Nacionalidad")+
   theme_bw()+
   theme(axis.text.x = element_text(angle = 90, hjust = 1))+
   xlim(0,10)+
@@ -125,10 +153,8 @@ jn
 
 ```{r}
 ohbpor= ohbio2 %>% 
-  dplyr::mutate(inf_112=(length_total_cm < 3.6))
-
-%>% # new column TRUE if value is below 112
-  dplyr::summarise(pct=round(100*sum(inf_112)/n())) # divide the number or rows where value is below 112 by the total number of rows
+  dplyr::mutate(inf_112=(length_total_cm - 3.6))%>% # new column TRUE if value is below 112
+  dplyr::summarise(pct=as.double(round(100*sum(inf_112))/n())) # divide the number or rows where value is below 112 by the total number of rows
 ```
 
 
