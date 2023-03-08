@@ -104,25 +104,32 @@ Test how many register have by year. In this case, `length_total_cm` by year.
 ```{r}
 coutlength <-ohbio2 %>% 
   drop_na(length_total_cm) %>% 
-  dplyr::group_by(season_ccamlr) %>%
+  dplyr::group_by(season_ccamlr,) %>%
   dplyr::summarise(avg=mean(length_total_cm))
 kableExtra::kable(coutlength, format = "html")
 ```
 a quick glimse to all 48 subarea length composition from monitoring fisheries.
 
 ```{r  fig.align="center", message=F, warning=F}
-jz <- ggplot(ohbio2, aes(x=length_total_cm, y = as.factor(season_ccamlr),
+jz <- ggplot(ohbio2 %>% 
+               filter(season_ccamlr>2000), 
+             aes(x=length_total_cm, 
+                 y = as.factor(season_ccamlr),
                          fill=asd_code))+
   #geom_joy(alpha=0.9) +
   geom_density_ridges(stat = "binline", bins = 30, 
-                      scale = 0.95, draw_baseline = FALSE)+
+                      scale = 0.95, 
+                      draw_baseline = FALSE)+
   facet_wrap(.~asd_code, ncol=3) +   
   geom_vline(xintercept = 3.6, color = "red")+
-  scale_x_continuous(breaks = seq(from = 1, to = 10, by = 1))+
-  scale_y_discrete(breaks = seq(from = 2000, to = 2020, by = 1))+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 1))+
+  scale_y_discrete(breaks = seq(from = 2000, 
+                                to = 2020, by = 1))+
   scale_fill_viridis_d(name="SubArea")+
   theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
   xlim(0,10)+
   xlab("Longitud (cm.)")+
   ylab("")
@@ -132,15 +139,17 @@ Estructura de tallas por año y por nacionalidad
 
 
 ```{r fig.align="center", message=F, warning=F}
-jn <- ggplot(ohbio2 , aes(x=length_total_cm, 
-                          y = as.factor(season_ccamlr),
-                         fill=asd_code))+
+jn <- ggplot(ohbio2 %>% 
+               filter(season_ccamlr>2000), 
+             aes(x=length_total_cm, 
+                 y = as.factor(season_ccamlr),
+                 fill=asd_code))+
   geom_density_ridges(alpha=0.5, stat = "binline") + 
-  facet_wrap(.~vessel_nationality_code, ncol=8) +   
+  facet_wrap(.~vessel_nationality_code, ncol=6) +   
   geom_vline(xintercept = 3.6, color = "red")+
   scale_x_continuous(breaks = seq(from = 1, to = 10, by = 1))+
-  scale_y_discrete(breaks = seq(from = 2001, to = 2020, by = 1))+
-  scale_fill_viridis_d(option = "F", name="Nacionalidad")+
+  scale_y_discrete(breaks = seq(from = 2000, to = 2020, by = 1))+
+  scale_fill_viridis_d(option = "F", name="SubArea")+
   theme_bw()+
   theme(axis.text.x = element_text(angle = 90, hjust = 1))+
   xlim(0,10)+
@@ -153,15 +162,14 @@ jn
 ## Recruit estimate (% Low Recruit length) [@Perry2019]
 
 ```{r}
-ohbpor= ohbio2 %>% 
-  dplyr::mutate(inf_112=(length_total_cm - 3.6))%>% # new column TRUE if value is below 112
-  dplyr::summarise(pct=as.double(round(100*sum(inf_112))/n())) # divide the number or rows where value is below 112 by the total number of rows
+ohbpor <- ohbio2 %>% 
+  dplyr::mutate(infre=(length_total_cm - 3.6)) 
 ```
 
 
 ```{r}
 pct100<- ggplot(ohbpor, 
-               aes(season_ccamlr,pct))+
+               aes(season_ccamlr,infre))+
     geom_point(alpha=0.5, shape=21, color=2, fill=2, show.legend = T) +
     stat_smooth(method= "loess", colour=2)+
     scale_size(range = c(-4,8)) +
