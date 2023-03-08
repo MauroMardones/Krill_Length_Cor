@@ -21,18 +21,20 @@ output:
     code-tools: true
 ---
 
-```{r setup, include=FALSE}
+```{r setup1}
 rm(list = ls())
-knitr::opts_chunk$set(echo = TRUE,
-                      message = FALSE)
 ```
 
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
 # Background
 
-
 The following document intends to carry out a complementary methodological analysis to correlate environmental variables with the population dynamics of krill (*Euphausia superba*).
-
 
 # Objective 
 
@@ -45,7 +47,6 @@ library(reshape2)
 library(tidyverse)
 library(plyr)
 library(lubridate)
-library(lmerTest)
 library(raster)
 library(sf)
 library(CCAMLRGIS)
@@ -54,13 +55,8 @@ library(easystats) # analisis estadisticos post
 library(ncdf4)
 library(readr)
 library(data.table)
-library(marmap)
-library(mapproj)
-library(maps)
-library(tmap)
-library(tmaptools)
 library(ggridges)
-library(here)
+library(patchwork)
 ```
 
 ## Length structure krill 48 subarea
@@ -80,6 +76,7 @@ metadata <- load("~/DOCAS/Data/565_C1_KRI_2021-10-01/DATA_PRODUCT_565.RData")
 #ohbio <- load("DataLengthKrill.RData")
 #ohbio
 metadata
+#son lo mismo
 ```
 
 
@@ -99,7 +96,7 @@ ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")
 dim(ohbio2)
 ```
 
-Test how many register have by year. In this case, `length_total_cm` by year.
+Firsts glance. Test how many register have by year. In this case, `length_total_cm` by year. 
 
 ```{r}
 coutlength <-ohbio2 %>% 
@@ -126,7 +123,8 @@ jz <- ggplot(ohbio2 %>%
                                   by = 1))+
   scale_y_discrete(breaks = seq(from = 2000, 
                                 to = 2020, by = 1))+
-  scale_fill_viridis_d(name="SubArea")+
+  scale_fill_viridis_d(name="SubArea",
+                       option="F")+
   theme_bw()+
   theme(axis.text.x = element_text(angle = 90, 
                                    hjust = 1))+
@@ -144,8 +142,8 @@ jn <- ggplot(ohbio2 %>%
              aes(x=length_total_cm, 
                  y = as.factor(season_ccamlr),
                  fill=asd_code))+
-  geom_density_ridges(alpha=0.5, stat = "binline") + 
-  facet_wrap(.~vessel_nationality_code, ncol=6) +   
+  geom_density_ridges(alpha=0.9, stat = "binline") + 
+  facet_wrap(.~vessel_nationality_code, ncol=4) +   
   geom_vline(xintercept = 3.6, color = "red")+
   scale_x_continuous(breaks = seq(from = 1, to = 10, by = 1))+
   scale_y_discrete(breaks = seq(from = 2000, to = 2020, by = 1))+
@@ -162,8 +160,49 @@ jn
 ## Recruit estimate (% Low Recruit length) [@Perry2019]
 
 ```{r}
-ohbpor <- ohbio2 %>% 
-  dplyr::mutate(infre=(length_total_cm - 3.6)) 
+ohpor <- ohbio2 %>% 
+  group_by(season_ccamlr, asd_code) %>%
+  mutate(infre=(length_total_cm - 3.6)) %>%
+  filter(infre > 0) %>% 
+  mutate(prc =round(infre/length_total_cm*100,2))
+```
+Ahora lo grafico con un polar plot por subarea
+
+```{r message=F, warning=F}
+
+ohbiopor<- ggplot(ohpor) + 
+  geom_point(aes(y=prc, 
+                 x=season_ccamlr))+
+  facet_wrap(~asd_code, ncol=3)+
+  theme_bw()+
+  scale_fill_pizza_c(name="% Bajo talla Reclutas")+
+  xlab("")+
+  ylab("% Bajo Talla Recluta (3.6 cm.)")
+ohbiopor
+
+```
+Un diaggrama de caja para el porcentage de individuos bajo talla (3.6 mmm.)
+```{r}
+box <- ggplot(ohpor) +
+  geom_boxplot(aes(prc, group=season_ccamlr), 
+               alpha=0.5,
+               fill=3)+
+  xlim(0, 75)+
+  coord_flip()+
+  facet_wrap(~asd_code, ncol=1)+
+  theme_bw()+
+  labs(x="% Below Recruit length (3.6 mm.)",
+       x="")
+hi <- ggplot(ohpor)+
+  geom_histogram(aes(y=prc), 
+                 fill=3,
+                 color="black")+
+  coord_flip()+
+  theme_bw()+
+  ylim(0,100)
+
+box | hi
+  
 ```
 
 
