@@ -96,7 +96,7 @@ ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")
 dim(ohbio2)
 ```
 
-Firsts glance. Test how many register have by year. In this case, `length_total_cm` by year. 
+Firsts glance. Test how many register have by year. In this case, `length_total_cm` by season ccamlr.
 
 ```{r}
 coutlength <-ohbio2 %>% 
@@ -105,18 +105,48 @@ coutlength <-ohbio2 %>%
   dplyr::summarise(avg=mean(length_total_cm))
 kableExtra::kable(coutlength, format = "html")
 ```
-a quick glimse to all 48 subarea length composition from monitoring fisheries.
+
+same exercise in date period `date_catchperiod_start`
+
+```{r}
+ohbio3 <- ohbio2 %>%
+  mutate(Year = year(date_catchperiod_start),
+         Month = month(date_catchperiod_start),
+         Day = day(date_catchperiod_start))
+```
+
+
+```{r}
+names(ohbio3)
+ohbio4 <- ohbio3 %>% 
+dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47)
+names(ohbio4)
+```
+
+Some features of data set length structures
+```{r}
+table(ohbio4$gear_type) %>%
+  kbl() %>%
+  kable_styling()
+
+table(ohbio2$trawl_technique)%>%
+  kbl() %>%
+  kable_styling()
+```
+
+Filter data regarding to previous glances. Follow with a quick glimse to all 48 subarea length composition from monitoring fisheries.
 
 ```{r  fig.align="center", message=F, warning=F}
-jz <- ggplot(ohbio2 %>% 
-               filter(season_ccamlr>2000), 
+jz <- ggplot(ohbio4 %>% 
+               filter(Year>2000),
              aes(x=length_total_cm, 
-                 y = as.factor(season_ccamlr),
-                         fill=asd_code))+
+                 y = as.factor(Year), 
+                 fill=asd_code))+
   #geom_joy(alpha=0.9) +
-  geom_density_ridges(stat = "binline", bins = 30, 
-                      scale = 0.95, 
-                      draw_baseline = FALSE)+
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.8, 
+                      draw_baseline = FALSE,
+                      alpha=0.9)+
   facet_wrap(.~asd_code, ncol=3) +   
   geom_vline(xintercept = 3.6, color = "red")+
   scale_x_continuous(breaks = seq(from = 1, to = 10, 
@@ -133,54 +163,98 @@ jz <- ggplot(ohbio2 %>%
   ylab("")
 jz
 ```
-Estructura de tallas por año y por nacionalidad
 
-
-```{r fig.align="center", message=F, warning=F}
-jn <- ggplot(ohbio2 %>% 
-               filter(season_ccamlr>2000), 
+```{r  fig.align="center", message=F, warning=F}
+trwal <- ggplot(ohbio4 %>% 
+               filter(Year>2000),
              aes(x=length_total_cm, 
-                 y = as.factor(season_ccamlr),
-                 fill=asd_code))+
-  geom_density_ridges(alpha=0.9, stat = "binline") + 
-  facet_wrap(.~vessel_nationality_code, ncol=4) +   
+                 y = as.factor(Year),
+                 fill= trawl_technique))+
+  #geom_joy(alpha=0.9) +
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.8, 
+                      draw_baseline = FALSE,
+                      alpha=0.5)+
+  facet_wrap(.~asd_code, ncol=3) +   
   geom_vline(xintercept = 3.6, color = "red")+
-  scale_x_continuous(breaks = seq(from = 1, to = 10, by = 1))+
-  scale_y_discrete(breaks = seq(from = 2000, to = 2020, by = 1))+
-  scale_fill_viridis_d(option = "F", name="SubArea")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 1))+
+  scale_y_discrete(breaks = seq(from = 2000, 
+                                to = 2020, by = 1))+
+  scale_fill_viridis_d(name="Trawl Technique",
+                       option="F")+
   theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  xlim(0,10)+
+  xlab("Longitud (cm.)")+
+  ylab("")+
+trwal
+```
+Same plot by Sub Area and month trought year. With this kind of plot, we can see the recruit power interannually.
+
+
+```{r  fig.align="center", message=F, warning=F}
+ymasd <- ggplot(ohbio4 %>% 
+               filter(Year>2000),
+             aes(x=length_total_cm, 
+                 y = as.factor(Month),
+                 fill=asd_code))+
+  #geom_joy(alpha=0.9) +
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.5, 
+                      draw_baseline = FALSE,
+                      alpha=0.5)+
+  facet_wrap(.~season_ccamlr, ncol=5) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 1))+
+  scale_y_discrete(breaks = seq(from = 1, 
+                                to = 12, by = 1))+
+  scale_fill_viridis_d(name="SubArea",
+                       option="F")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
   xlim(0,10)+
   xlab("Longitud (cm.)")+
   ylab("")
-jn
+ymasd
+```
+
+```{r  fig.align="center", message=F, warning=F}
+yma481 <- ggplot(ohbio4 %>% 
+               filter(Year>2000,
+                      asd_code==481),
+             aes(x=length_total_cm, 
+                 y = as.factor(Month),
+                 fill=asd_code))+
+  #geom_joy(alpha=0.9) +
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.5, 
+                      draw_baseline = FALSE,
+                      alpha=0.5)+
+  facet_wrap(.~Year, ncol=5) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 1))+
+  scale_y_discrete(breaks = seq(from = 1, 
+                                to = 12, by = 1))+
+  scale_fill_viridis_d(name="SubArea",
+                       option="F")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  xlim(0,10)+
+  xlab("Longitud (cm.)")+
+  ylab("")
+yma481
 ```
 
 
 ## Recruit estimate (% Low Recruit length) [@Perry2019]
 
-```{r}
-ohpor <- ohbio2 %>% 
-  group_by(season_ccamlr, asd_code) %>%
-  mutate(infre=(length_total_cm - 3.6)) %>%
-  filter(infre > 0) %>% 
-  mutate(prc =round(infre/length_total_cm*100,2))
-```
-Ahora lo grafico con un polar plot por subarea
 
-```{r message=F, warning=F}
-
-ohbiopor<- ggplot(ohpor) + 
-  geom_point(aes(y=prc, 
-                 x=season_ccamlr))+
-  facet_wrap(~asd_code, ncol=3)+
-  theme_bw()+
-  scale_fill_pizza_c(name="% Bajo talla Reclutas")+
-  xlab("")+
-  ylab("% Bajo Talla Recluta (3.6 cm.)")
-ohbiopor
-
-```
 Un diaggrama de caja para el porcentage de individuos bajo talla (3.6 mmm.)
 ```{r}
 box <- ggplot(ohpor) +
