@@ -1,0 +1,376 @@
+---
+title: "Krill Length 48.1"
+author: "Mauricio Mardones"
+date:  "`r format(Sys.time(), '%d %B, %Y')`"
+bibliography: seaice.bib
+csl: apa.csl
+link-citations: yes
+linkcolor: blue
+output:
+  html_document:
+    toc: true
+    toc_deep: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    theme: cosmo
+    fontsize: 0.9em
+    linestretch: 1.7
+    html-math-method: katex
+    self-contained: true
+    code-tools: true
+---
+
+```{r setup1}
+rm(list = ls())
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+# Background
+
+The following document intends to carry out a complementary methodological analysis to correlate environmental variables with the population dynamics of krill (*Euphausia superba*).
+
+# Objective 
+
+Once the correlation and effects on the population and/or fishing indicators on krill have been verified, this analysis aims to have a time series of the environmental variable to incorporate into the stock assessment process. Similar work in @Wang2021 but with a longest fishery history.
+
+
+
+```{r message=FALSE}
+library(reshape2)
+library(tidyverse)
+library(plyr)
+library(lubridate)
+library(raster)
+library(sf)
+library(CCAMLRGIS)
+library(here)
+library(easystats) # analisis estadisticos post
+library(ncdf4)
+library(readr)
+library(data.table)
+library(ggridges)
+library(patchwork)
+library(knitr)
+library(kableExtra)
+```
+
+## Length structure krill 48 subarea
+
+Another important piece of information for a stock evaluation refers to the biological components such as average sizes and weights across areas and years. To do this, we will explore the biological data and prepare the output to pass it to SS3.
+
+the idea is to correlate mean lengths with SIC.
+
+## Data exploratory analysis
+
+The object `ohbio2` come from data exploration analysis  in data request CCAMLR data. This objetc have bio information from krill.
+
+```{r}
+#datos entregados por secretaria de CCMLAR
+metadata <- load("~/DOCAS/Data/565_C1_KRI_2021-10-01/DATA_PRODUCT_565.RData")
+# Data procesada por MMardones
+#ohbio <- load("DataLengthKrill.RData")
+#ohbio
+metadata
+#son lo mismo
+```
+
+
+```{r}
+#cargo objeto
+meta <- get("METADATA")
+c1 <- get("C1")
+ohbio <- get("OBS_HAUL_BIOLOGY")
+names(ohbio)
+dim(c1)
+dim(ohbio)
+```
+
+Join data set  with master as `c1` set. This join is trought `obs_haul_id` variable
+```{r}
+ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")
+dim(ohbio2)
+```
+
+Firsts glance. Test how many register have by year. In this case, `length_total_cm` by season ccamlr.
+
+same exercise in date period `date_catchperiod_start`
+
+```{r}
+ohbio3 <- ohbio2 %>%
+  mutate(Year = year(date_catchperiod_start),
+         Month = month(date_catchperiod_start),
+         Day = day(date_catchperiod_start))
+```
+
+
+```{r}
+names(ohbio3)
+ohbio4 <- ohbio3 %>% 
+dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47)
+names(ohbio4)
+```
+
+
+
+```{r}
+coutlength <-ohbio4 %>% 
+  drop_na(length_total_cm) %>% 
+  dplyr::group_by(Year, Month, asd_code) %>%
+  dplyr::summarise(avg=mean(length_total_cm))
+#kableExtra::kable(coutlength, format = "html")
+```
+
+Some features of data set length structures
+```{r}
+table(ohbio4$gear_type) %>%
+  kbl() %>%
+  kable_styling()
+
+table(ohbio2$trawl_technique)%>%
+  kbl() %>%
+  kable_styling()
+```
+
+## Plots
+
+Filter data regarding to previous glances. Follow with a quick glimse to all 48 subarea length composition from monitoring fisheries.
+
+```{r  fig.align="center", message=F, warning=F}
+jz <- ggplot(ohbio4 %>% 
+               filter(Year>2000),
+             aes(x=length_total_cm, 
+                 y = as.factor(Year), 
+                 fill=asd_code))+
+  #geom_joy(alpha=0.9) +
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.8, 
+                      draw_baseline = FALSE,
+                      alpha=0.9)+
+  facet_wrap(.~asd_code, ncol=3) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 1))+
+  scale_y_discrete(breaks = seq(from = 2000, 
+                                to = 2020, by = 1))+
+  scale_fill_viridis_d(name="SubArea",
+                       option="F")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  xlim(0,10)+
+  xlab("Longitud (cm.)")+
+  ylab("")
+jz
+```
+
+```{r  fig.align="center", message=F, warning=F}
+
+trwal <- ggplot(ohbio4 %>% 
+               filter(Year>2000),
+             aes(x=length_total_cm, 
+                 y = as.factor(Year),
+                 fill= trawl_technique))+
+  #geom_joy(alpha=0.9) +
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.8, 
+                      draw_baseline = FALSE,
+                      alpha=0.5)+
+  facet_wrap(.~asd_code, ncol=3) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 1))+
+  scale_y_discrete(breaks = seq(from = 2000, 
+                                to = 2020, by = 1))+
+  scale_fill_viridis_d(name="Trawl Technique",
+                       option="F")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  xlim(0,10)+
+  xlab("Longitud (cm.)")+
+  ylab("")
+trwal
+```
+Same plot by Sub Area and month trought year. With this kind of plot, we can see the recruit power interannually.
+
+
+```{r  fig.align="center", message=F, warning=F}
+ymasd <- ggplot(ohbio4 %>% 
+               filter(Year>2000),
+             aes(x=length_total_cm, 
+                 y = as.factor(Month),
+                 fill=asd_code))+
+  #geom_joy(alpha=0.9) +
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.5, 
+                      draw_baseline = FALSE,
+                      alpha=0.5)+
+  facet_wrap(.~season_ccamlr, ncol=5) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 1))+
+  scale_y_discrete(breaks = seq(from = 1, 
+                                to = 12, by = 1))+
+  scale_fill_viridis_d(name="SubArea",
+                       option="F")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  xlim(0,10)+
+  xlab("Longitud (cm.)")+
+  ylab("")
+ymasd
+```
+
+```{r  fig.align="center", message=F, warning=F}
+yma481 <- ggplot(ohbio4 %>% 
+               filter(Year>2000,
+                      asd_code==481),
+             aes(x=length_total_cm, 
+                 y = as.factor(Month),
+                 fill=asd_code))+
+  #geom_joy(alpha=0.9) +
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.5, 
+                      draw_baseline = FALSE,
+                      alpha=0.5)+
+  facet_wrap(.~Year, ncol=5) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 1))+
+  scale_y_discrete(breaks = seq(from = 1, 
+                                to = 12, by = 1))+
+  scale_fill_viridis_d(name="SubArea",
+                       option="F")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  xlim(0,10)+
+  xlab("Longitud (cm.)")+
+  ylab("")
+yma481
+```
+
+## Mean Length
+Recruit estimate (% Low Recruit length) [@Perry2020]
+
+
+Un diaggrama de caja para el porcentage de individuos bajo talla (3.6 mmm.)
+```{r}
+box <- ggplot(ohbio4) +
+  geom_boxplot(aes(length_total_cm, group=season_ccamlr), 
+               alpha=0.3,
+               fill=3)+
+  xlim(0, 7)+
+  coord_flip()+
+  facet_wrap(~asd_code, ncol=1)+
+  theme_bw()+
+  labs(x="% Below Recruit length (3.6 mm.)",
+       x="")
+hi <- ggplot(ohbio4)+
+  geom_histogram(aes(y=length_total_cm), 
+                 fill=3,
+                 alpha=0.3,
+                 color="black")+
+  coord_flip()+
+  theme_bw()+
+  ylim(0,10)
+
+box | hi
+  
+```
+
+Ahora saco tallas medias por distintas variables
+
+
+```{r, fig.align="center"}
+pmea <- ggplot(coutlength %>% 
+                 filter(Year>2000), 
+               aes(Year,avg))+
+    geom_point(shape=21, fill=coutlength$asd_code, 
+               show.legend = T) +
+    stat_smooth(method= "glm", colour='#253494')+
+    scale_size(range = c(-4,8)) +
+    theme_bw()+ 
+    facet_wrap(.~asd_code)+
+    scale_x_continuous(breaks = seq(from = 2000, to = 2020, by = 2))+
+    #scale_y_discrete(breaks = seq(from = 1, to = 13, by = 1))+
+    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
+    guides(fill = guide_legend(reverse=F))+
+    scale_fill_viridis_c(option="E")+
+    ylim(3,6)+
+    ylab("") +
+    xlab("") +
+    ggtitle("Lenght Mean Krill fishery")
+pmea
+```
+by month and year only 48.1
+
+
+```{r, fig.align="center"}
+pmea481 <- ggplot(coutlength %>% 
+                 filter(Year>2000,
+                        asd_code==481), 
+               aes(Month, avg))+
+    geom_point(shape=21,  
+               show.legend = T) +
+    stat_smooth(method= "glm", colour='#253494')+
+    scale_x_continuous(breaks = seq(from = 1, to = 12, by = 2))+
+    theme_bw()+ 
+    facet_wrap(.~Year) +
+    ggtitle("Lenght Mean Krill fishery 48.1")+
+    ylim(0, 6)
+pmea481
+```
+
+
+## GLM 
+
+```{r}
+model1 <- glm(avg ~ Year, data = coutlength)
+r2(model1)
+check_model(model1)
+
+model2 <- glm(avg ~ Year + 
+                Month, data = coutlength)
+r2(model2)
+check_model(model2)
+
+model3 <- glm(avg ~ Year + 
+                Month + 
+                asd_code, data = coutlength)
+r2(model3)
+check_model(model3)
+```
+
+Compara modelos
+
+```{r}
+plot(compare_performance(model1, 
+                         model2, 
+                         model3,
+                         rank = TRUE))
+```
+
+Probar datos con RaadTools library [@Raadtools2022]
+
+
+
+# References
+
+Sea ice data is from Giovanni NASA browser 
+(https://giovanni.gsfc.nasa.gov/)
+ref: Global Modeling and Assimilation Office (GMAO) (2015), 
+
+MERRA-2 tavgM_2d_flx_Nx: 2d,Monthly mean,Time-Averaged,Single-Level,
+Assimilation,Surface Flux Diagnostics V5.12.4, 
+Greenbelt, MD, USA, 
+Goddard Earth Sciences Data and Information Services Center (GES DISC), 
+Accessed: [06 July 2022], 10.5067/0JRLVL8YV2Y4
