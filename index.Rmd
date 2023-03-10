@@ -362,7 +362,65 @@ plot(compare_performance(model1,
 
 (Probar datos con RaadTools library [@Raadtools2022])
 
+## Grid to data
 
+In this step we filter the empty or null data (`NA`) and we will nest the mean lengths in the same formats as the environmental data.
+
+
+```{r agrupa}
+
+# Cargo linea de costa
+coast <- load_Coastline()
+coast1<- st_as_sf(coast) 
+coast2 = st_transform(coast1, "+proj=latlong +ellps=WGS84")
+# con SSMU
+ssmu <- load_SSMUs()
+ssmu481 <- subset(ssmu[c(2,3,4,5,6,7,17),])
+ssmu481a <- st_as_sf(ssmu481) 
+ssmu481aa = st_transform(ssmu481a, "+proj=latlong +ellps=WGS84")
+
+# con Statistical Areas con foco en 48.1
+suba <- load_ASDs()
+suba1 <- subset(suba[(3),])
+suba1a<- st_as_sf(suba1) 
+suba1aa = st_transform(suba1a, "+proj=latlong +ellps=WGS84")
+
+
+# Uso las agrupaciones de DMP1
+dmp1 <- st_read("~/DOCAS/Mapas/Antarctic_SHPfiles/D1MPA-model-2019.shp",
+                quiet=T)
+dmp1=st_transform(dmp1, 6932)
+
+# Uso las agrupaciones de Strata
+strata <- st_read("~/DOCAS/Mapas/Antarctic_SHPfiles/Strata.shp",
+                quiet=T)
+strata=st_transform(strata, 6932)
+```
+
+```{r maptest}
+# y testeo el mapa
+ssmap <- ggplot(ssmu481aa)+
+  geom_sf(data = strata, aes(fill=strata$ID, 
+                           alpha=0.3))+
+  # geom_sf(data = ssmu481aa, aes(fill=ssmu481aa$GAR_Short_Label, 
+  #                         alpha=0.3))+
+  geom_sf(data = coast2, colour="black", fill=NA)+
+  #geom_sf(data = gridcrop1, colour="black", fill=NA)+
+  #geom_sf(data= suba1aa, fill=NA)+
+  # geom_sf(aes(fill=ssmu481aa$GAR_Short_Label,
+  #              alpha=0.3))+
+  scale_fill_viridis_d(option = "F",
+                       name="Strata")+
+  #geom_sf_label(aes(label = strata$ID))+
+  # labs(fill = "SSMU")+
+  ylim(230000, 2220000)+
+  xlim(-3095349 , -1858911)+
+  # coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
+  coord_sf(crs = 6932)+
+  scale_alpha(guide="none")+
+  theme_bw()
+ssmap
+```
 
 # References
 
