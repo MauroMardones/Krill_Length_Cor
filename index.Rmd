@@ -268,6 +268,7 @@ box <- ggplot(ohbio4) +
   geom_boxplot(aes(length_total_cm, group=season_ccamlr), 
                alpha=0.3,
                fill=3)+
+  geom_vline(xintercept = 3.6, color = "red")+
   xlim(0, 7)+
   coord_flip()+
   facet_wrap(~asd_code, ncol=1)+
@@ -359,7 +360,7 @@ plot(compare_performance(model1,
                          rank = TRUE))
 ```
 
-Probar datos con RaadTools library [@Raadtools2022]
+(Probar datos con RaadTools library [@Raadtools2022])
 
 
 
