@@ -19,6 +19,9 @@ output:
     html-math-method: katex
     self-contained: true
     code-tools: true
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup1}
@@ -34,13 +37,17 @@ options(bitmapType = "cairo")
 
 # Background
 
-The following document intends to carry out a complementary methodological analysis to correlate environmental variables with the population dynamics of krill (*Euphausia superba*).
+The following document intends to carry out a complementary
+methodological analysis to correlate environmental variables with the
+population dynamics of krill (*Euphausia superba*).
 
-# Objective 
+# Objective
 
-Once the correlation and effects on the population and/or fishing indicators on krill have been verified, this analysis aims to have a time series of the environmental variable to incorporate into the stock assessment process. Similar work in @Wang2021 but with a longest fishery history.
-
-
+Once the correlation and effects on the population and/or fishing
+indicators on krill have been verified, this analysis aims to have a
+time series of the environmental variable to incorporate into the stock
+assessment process. Similar work in @Wang2021 but with a longest fishery
+history.
 
 ```{r message=FALSE}
 library(reshape2)
@@ -63,17 +70,25 @@ library(kableExtra)
 library(corrplot)
 library(outliers)
 library(visreg)
+# correlation test 
+library(PerformanceAnalytics)
+library(psych)
+
 ```
 
 ## Length structure krill 48 subarea
 
-Another important piece of information for a stock evaluation refers to the biological components such as average sizes and weights across areas and years. To do this, we will explore the biological data and prepare the output to pass it to SS3.
+Another important piece of information for a stock evaluation refers to
+the biological components such as average sizes and weights across areas
+and years. To do this, we will explore the biological data and prepare
+the output to pass it to SS3.
 
 the idea is to correlate mean lengths with SIC.
 
 ## Data exploratory analysis
 
-The object `ohbio2` come from data exploration analysis  in data request CCAMLR data. This objetc have bio information from krill.
+The object `ohbio2` come from data exploration analysis in data request
+CCAMLR data. This objetc have bio information from krill.
 
 ```{r}
 #datos entregados por secretaria de CCMLAR
@@ -85,7 +100,6 @@ metadata
 #son lo mismo
 ```
 
-
 ```{r}
 #cargo objeto
 meta <- get("METADATA")
@@ -96,13 +110,16 @@ dim(c1)
 dim(ohbio)
 ```
 
-Join data set  with master as `c1` set. This join is trought `obs_haul_id` variable
+Join data set with master as `c1` set. This join is trought
+`obs_haul_id` variable
+
 ```{r}
 ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")
 dim(ohbio2)
 ```
 
-Firsts glance. Test how many register have by year. In this case, `length_total_cm` by season ccamlr.
+Firsts glance. Test how many register have by year. In this case,
+`length_total_cm` by season ccamlr.
 
 same exercise in date period `date_catchperiod_start`
 
@@ -113,15 +130,12 @@ ohbio3 <- ohbio2 %>%
          Day = day(date_catchperiod_start))
 ```
 
-
 ```{r}
 names(ohbio3)
 ohbio4 <- ohbio3 %>% 
 dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47)
 names(ohbio4)
 ```
-
-
 
 ```{r}
 coutlength <-ohbio4 %>% 
@@ -132,6 +146,7 @@ coutlength <-ohbio4 %>%
 ```
 
 Some features of data set length structures
+
 ```{r}
 table(ohbio4$gear_type) %>%
   kbl() %>%
@@ -144,7 +159,8 @@ table(ohbio2$trawl_technique)%>%
 
 ## Plots
 
-Filter data regarding to previous glances. Follow with a quick glimse to all 48 subarea length composition from monitoring fisheries.
+Filter data regarding to previous glances. Follow with a quick glimse to
+all 48 subarea length composition from monitoring fisheries.
 
 ```{r  fig.align="center", message=F, warning=F}
 jz <- ggplot(ohbio4 %>% 
@@ -202,8 +218,9 @@ trwal <- ggplot(ohbio4 %>%
   ylab("")
 trwal
 ```
-Same plot by Sub Area and month trought year. With this kind of plot, we can see the recruit power interannually.
 
+Same plot by Sub Area and month trought year. With this kind of plot, we
+can see the recruit power interannually.
 
 ```{r  fig.align="center", message=F, warning=F}
 ymasd <- ggplot(ohbio4 %>% 
@@ -263,10 +280,12 @@ yma481
 ```
 
 ## Mean Length
+
 Recruit estimate (% Low Recruit length) [@Perry2020]
 
+Un diaggrama de caja para el porcentage de individuos bajo talla (3.6
+mmm.)
 
-Un diaggrama de caja para el porcentage de individuos bajo talla (3.6 mmm.)
 ```{r}
 box <- ggplot(ohbio4) +
   geom_boxplot(aes(length_total_cm, group=season_ccamlr), 
@@ -294,7 +313,6 @@ box | hi
 
 Ahora saco tallas medias por distintas variables
 
-
 ```{r, fig.align="center"}
 pmea <- ggplot(coutlength %>% 
                  filter(Year>2000), 
@@ -316,8 +334,8 @@ pmea <- ggplot(coutlength %>%
     ggtitle("Lenght Mean Krill fishery")
 pmea
 ```
-by month and year only 48.1
 
+by month and year only 48.1
 
 ```{r, fig.align="center"}
 pmea481 <- ggplot(coutlength %>% 
@@ -334,7 +352,6 @@ pmea481 <- ggplot(coutlength %>%
     ylim(0, 6)
 pmea481
 ```
-
 
 ## GLM just length
 
@@ -368,8 +385,8 @@ plot(compare_performance(model1,
 
 ## Grid to data
 
-In this step we filter the empty or null data (`NA`) and we will nest the mean lengths in the same formats as the environmental data.
-
+In this step we filter the empty or null data (`NA`) and we will nest
+the mean lengths in the same formats as the environmental data.
 
 ```{r agrupa}
 
@@ -425,11 +442,14 @@ ssmap <- ggplot(ssmu481aa)+
   theme_bw()
 ssmap
 ```
+
 ## Grouping Length data
 
 ## SSMU 48.1 CCAMLR
 
-Identificar tendencias temporales por cada SSSMU para tener un mejor detalle del comportamiento de la variable a traves del tiempo en el espacio definido.
+Identificar tendencias temporales por cada SSSMU para tener un mejor
+detalle del comportamiento de la variable a traves del tiempo en el
+espacio definido.
 
 De forma experimental hago una grilla sobre la 48.1.
 
@@ -445,6 +465,7 @@ ohbio6 <- st_as_sf(ohbio5 %>%
 ```
 
 hago la grilla
+
 ```{r ssmu1}
 
 Grid<- suba1aa  %>% #pm481 es el plot base original linea 481
@@ -510,13 +531,14 @@ Load environmental data to merge with length.
 datae <- load("~/DOCAS/Data/KrillLows/DataEnvKrill.RData")
 ```
 
-
 ```{r}
 ls()
 get("dataenvf")
 ```
 
-Join length and environental data by `cellid` and `Year` with a reduce DB. 
+Join length and environental data by `cellid` and `Year` with a reduce
+DB.
+
 ```{r}
 class(dataenvf)
 
@@ -532,6 +554,7 @@ dim(envgru)
 summary(envgru)
 
 ```
+
 Join merge object in a new data base.
 
 ```{r}
@@ -543,13 +566,13 @@ envlen <- merge(grilen3, envgru,
 
 ## GLM Length-Environmental
 
-Debo trabajar ciertos componentes de los datos para poder hacer el analisis bajo supuestos estructurales.
+Debo trabajar ciertos componentes de los datos para poder hacer el
+analisis bajo supuestos estructurales.
 
-- Comprobar distribución de Longitudes medias de krill
-- Cambiar a factor `Year` y `cellid`
-- Filtrar datos `NA`
-- Filtrar outliers en datos ambientales
-
+-   Comprobar distribución de Longitudes medias de krill
+-   Cambiar a factor `Year` y `cellid`
+-   Filtrar datos `NA`
+-   Filtrar outliers en datos ambientales
 
 ### Test de comportamiento de la variable de longitudes `lenpro` mediante 2 test; 1) Shapiro-Wilk `shapiro.test()` y Kolmogorov-Smirnov `ks.test()`
 
@@ -563,6 +586,7 @@ tal<-ggplot(envlen, aes(x=lepro)) +
        y="Frecuency")
 tal
 ```
+
 ### Cambiar a factor `Year` y `cellid`
 
 ```{r}
@@ -570,15 +594,18 @@ envlen$Year<-as.factor(envlen$Year)
 envlen$cellid<-as.factor(envlen$cellid)
 glimpse(envlen)
 ```
+
 ### Filtrar datos `NA`
 
 ```{r}
 # Are there missing values?
 colSums(is.na(envlen))
 ```
+
 ### Filter outliers environmental and biological data
 
 Test trought plot all variables in `envlen` object
+
 ```{r}
 boxsic <- ggplot(envlen)+
   geom_boxplot(aes(Year, meansic2),
@@ -595,9 +622,9 @@ boxchl <- ggplot(envlen)+
 ggarrange(boxsic, boxtsm, boxchl, nrow = 3)
 
 ```
-got off sic outliers data and again
+is necessary get off outliers from Sea ice index. Get environmental outliers data and again...
 
-```{r}
+```{r warning=F, message=FALSE}
 envlen2 <- envlen %>% 
   filter(meansic2<100)
 
@@ -630,56 +657,93 @@ t<-ggplot(envlen2, aes(x=meanchl2)) +
 
 ggarrange(boxsic2, boxtsm2, boxchl2, p, q, t, nrow = 2, ncol=3)
 ```
-A su vez un plo t de hist 
 
-# Correlation Analysis 
+# Correlation Analysis
 
-## Simple correlation identification
+## Simple correlation identification toget information about variables
 
+Firts filter in our dataframe `envlen3`.
+
+Regarding difference between `Spearman` and `pearson`, both, the
+Spearman test and the Pearson test are statistical methods used to
+assess the correlation between two variables. The main difference
+between them is that the Pearson test evaluates the linear correlation
+between two continuous variables, while the Spearman test evaluates the
+monotonic correlation between two continuous or order variables.
+
+In the case of the Pearson test, the degree of association between two
+continuous variables is measured through a correlation coefficient that
+varies between -1 and 1. A value of 1 indicates a perfectly positive
+correlation, a value of -1 indicates a perfectly negative correlation,
+and a value of 0 indicates no correlation between the two variables.
+
+On the other hand, the Spearman test is based on the range of the
+variables, instead of the actual values. In other words, this test
+evaluates the correlation between two order variables, where the values
+of each variable are ranked from lowest to highest, and ranges are used
+instead of actual values. Spearman's correlation coefficient also varies
+between -1 and 1, but it measures the monotonic correlation between two
+variables, that is, if one variable increases, the other variable also
+increases or decreases[@McCulloch2001].
+
+In summary, the main difference between the Spearman test and the
+Pearson test is that the former is used to assess the monotonic
+correlation between two order variables, while the latter is used to
+assess the linear correlation between two continuous variables.
+
+-   Spearman's Rank Correlation Coefficient
+
+This coefficient is used to see if there is any significant relationship
+between the two datasets, and operates under the assumption that the
+data being used is ordinal, which here means that the numbers do not
+indicate quantity, but rather they signify a position of place of the
+subject's standing (e.g. 1st, 2nd, 3rd, etc.)
+
+$r^s = 1- \frac\sum\D^2*n(n^2-1)}$
+
+- Pearson Product-Moment Coefficient
+
+This is the most widely used correlation analysis formula, which measures the strength of the ‘linear’ relationships between the raw data from both variables, rather than their ranks. This is an dimensionless coefficient, meaning that there are no data-related boundaries to be considered when conducting analyses with this formula, which is a reason why this coefficient is the first formula researchers try.
+
+$r = $
+
+(Is posible report outpus by @Report2023)
 ```{r}
-class(envlen3)
+# change to data frame
 envlen3 <- as.data.frame(envlen2)
 report(envlen4)
 envlen4 <- envlen3 %>% 
-  dplyr::select(3, 4, 5, 6) %>% 
-  
-library(MASS)
+  dplyr::select(3, 4, 5, 6) %>%
+```
 
 
-plot(envlen2$meantsm2, envlen2$lepro, pch = 19, col = "lightblue")
-abline(lm(envlen2$lepro ~ envlen2$meantsm2), col = "red", lwd = 3)
-# Correlación de Pearson
-text(paste("Correlación:", round(cor(envlen2$meantsm2, envlen2$lepro), 2)), x = 272, y = 5)
 
-library(PerformanceAnalytics)
 
-chart.Correlation(envlen4, histogram = TRUE, method = "pearson")
-
-library(psych)
+```{r}
+chart.Correlation(envlen4, 
+                  histogram = TRUE, 
+                  method = "pearson")
 
 pairs.panels(envlen4,
-             smooth = TRUE,      # Si TRUE, dibuja ajuste suavizados de tipo loess
-             scale = FALSE,      # Si TRUE, escala la fuente al grado de correlación
-             density = TRUE,     # Si TRUE, añade histogramas y curvas de densidad
-             ellipses = TRUE,    # Si TRUE, dibuja elipses
-             method = "spearman", # Método de correlación (también "spearman" o "kendall")
-             pch = 21,           # Símbolo pch
-             lm = FALSE,         # Si TRUE, dibuja un ajuste lineal en lugar de un ajuste LOESS
-             cor = TRUE,         # Si TRUE, agrega correlaciones
-             jiggle = FALSE,     # Si TRUE, se añade ruido a los datos
-             factor = 2,         # Nivel de ruido añadido a los datos
+             smooth = TRUE,      
+             scale = FALSE,      
+             density = TRUE,     
+             ellipses = TRUE,  
+             method = "spearman",
+             pch = 21,           
+             lm = FALSE,        
+             cor = TRUE,         
+             jiggle = FALSE,     
+             factor = 2,        
              hist.col = 4,       # Color de los histogramas
-             stars = TRUE,       # Si TRUE, agrega el nivel de significación con estrellas
-             ci = TRUE)          # Si TRUE, añade intervalos de confianza a los ajustes
+             stars = TRUE)        
 
 report(rep)
 library(psych)
 
-corPlot(envlen2, cex = 1.2, main = "Matriz de correlación")
+corPlot(envlen4, cex = 1.2, main = "Matriz de correlación")
 ma <- cor(envlen4)
-reg3 <- glm(lepro ~ meantsm2 + meanchl2 + meansic2, 
-            family = gaussian,
-            data = envlen)
+
 plot(reg3)
 summary(reg3)
 
@@ -703,11 +767,10 @@ hist(log(envlenhis$meansic2))
 envsic_clean <- rm.outlier(envlen$meansic2, fill = TRUE, median = FALSE)
 ```
 
-
-
 ```{r}
 env1 <- glm(lepro ~ Year,
-            data = envlen)
+            data = envlen3)
+report(env1)
 r2(env1)
 summary(env1)
 check_model(env1)
@@ -717,7 +780,6 @@ drop1(env1)
 anova(env1, test="Chi")
 summary(env1)
 ```
-
 
 ```{r}
 library(lme4)
@@ -736,15 +798,13 @@ r2(model3)
 check_model(model3)
 ```
 
-
 # References
 
-Sea ice data is from Giovanni NASA browser 
-(https://giovanni.gsfc.nasa.gov/)
-ref: Global Modeling and Assimilation Office (GMAO) (2015), 
+Sea ice data is from Giovanni NASA browser
+(<https://giovanni.gsfc.nasa.gov/>) ref: Global Modeling and
+Assimilation Office (GMAO) (2015),
 
 MERRA-2 tavgM_2d_flx_Nx: 2d,Monthly mean,Time-Averaged,Single-Level,
-Assimilation,Surface Flux Diagnostics V5.12.4, 
-Greenbelt, MD, USA, 
-Goddard Earth Sciences Data and Information Services Center (GES DISC), 
+Assimilation,Surface Flux Diagnostics V5.12.4, Greenbelt, MD, USA,
+Goddard Earth Sciences Data and Information Services Center (GES DISC),
 Accessed: [06 July 2022], 10.5067/0JRLVL8YV2Y4
