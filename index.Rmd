@@ -23,13 +23,13 @@ output:
 
 ```{r setup1}
 rm(list = ls())
-```
-
-
-```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE,
                       warning = FALSE)
+#XQuartz is a mess, put this in your onload to default to cairo instead
+options(bitmapType = "cairo") 
+# (https://github.com/tidyverse/ggplot2/issues/2655)
+# Lo mapas se hacen mas rapido
 ```
 
 # Background
@@ -332,7 +332,7 @@ pmea481
 ```
 
 
-## GLM 
+## GLM just length
 
 ```{r}
 model1 <- glm(avg ~ Year, data = coutlength)
@@ -421,20 +421,19 @@ ssmap <- ggplot(ssmu481aa)+
   theme_bw()
 ssmap
 ```
-# Groupng Length data
+## Grouping Length data
 
-## SSMU CCAMLR
+## SSMU 48.1 CCAMLR
 
 Identificar tendencias temporales por cada SSSMU para tener un mejor detalle del comportamiento de la variable a traves del tiempo en el espacio definido.
 
-
-De forma experimental hago una grilla sobre las SSMU.
+De forma experimental hago una grilla sobre la 48.1.
 
 ```{r ssmu1}
 names(ohbio4)
 ohbio5 <- ohbio4 %>% 
   filter(asd_code==481) %>% 
-  dplyr::select(6, 7, 8, 9, 10, 11,) 
+  dplyr::select(6, 7, 8, 9, 10, 11, 12) 
 ohbio6 <- st_as_sf(ohbio5 %>% 
                      drop_na(latitude_set_end), 
                    coords = c("longitude_set_end", "latitude_set_end"),  
@@ -453,6 +452,9 @@ Grid<- suba1aa  %>% #pm481 es el plot base original linea 481
 # Clean the input data by removing duplicate vertices and making the object topologically valid
 grid3 <- st_make_valid(Grid)
 
+# Corto la grilla dentro de las SSMU
+gridcrop1 <- crop_shape(grid3, suba1aa, polygon = TRUE)
+
 # the first object drives the output geometry
 grilen <- grid3 %>%
   st_join(ohbio6) %>% 
@@ -461,15 +463,22 @@ grilen <- grid3 %>%
 names(grilen)
 dim(grilen)
 class(grilen)
+head(grilen)
 
 ```
 
-Testeo el mapa hielo
+Test lentgh mean map by Year
+
 ```{r ssmugri}
+grilen3 <- grilen %>%
+  drop_na(length_total_cm) %>% 
+  dplyr::group_by(cellid,Year) %>% 
+  dplyr::summarise(lepro=mean(length_total_cm))
+
+ 
 gl <- ggplot() +
-   geom_sf(data=grilen %>% 
-             drop_na(length_total_cm), 
-           aes(fill = length_total_cm), 
+   geom_sf(data=grilen3,
+           aes(fill = lepro), 
            alpha=0.7, color=NA) +
   scale_fill_viridis_b(option="G",
                        name="Krill Length Fishery (cm.)",
@@ -491,35 +500,116 @@ gl <- ggplot() +
 gl
 ```
 
+Load environmental data to merge with length.
 
-join data intro `strata`object
+```{r eval=FALSE}
+datae <- load("~/DOCAS/Data/KrillLows/DataEnvKrill.RData")
+```
+
 
 ```{r}
-ohbio7 <- ohbio6 %>% 
-  dplyr::group_by(Year, geometry, gear_type) %>% 
-  dplyr::summarise(meanl=mean(length_total_cm))
+ls()
+get("dataenvf")
+```
 
+Join length and environental data by `cellid` and `Year` with a reduce DB. 
+```{r}
+class(dataenvf)
 
-
-# comprobar si hay geometrías no válidas
-invalidos <- st_is_valid(ohbio7)
-
-
-
-# the first object drives the output geometry
-gritall<- strata %>%
-  st_join(ohbio8) %>% 
-  group_by(geometry)
-
-names(grilen)
-head(grilen)
-class(grilen)
-
-datae <- load("~/DOCAS/Data/KrillLows/DataEnvKrill2.RData")
-
-get(datae)
+envgru <- dataenvf %>%
+  dplyr::select(1, 2, 3, 6, 9) %>% 
+  drop_na(ANO.x) %>% 
+  dplyr::rename(Year=ANO.x) %>% 
+  dplyr::group_by(cellid,Year) %>% 
+  dplyr::summarise(meansic2=mean(meansic),
+                   meanchl2=mean(meanchl),
+                   meantsm2=mean(meantsm))
+dim(envgru)
+summary(envgru)
 
 ```
+Join merge object in a new data base.
+
+```{r}
+names(grilen3)
+names(envgru)
+
+envlen <- merge( grilen3, envgru, by = c("cellid", "Year"))
+
+```
+# Coorelation Analysis 
+
+## Simple correlation
+
+```{r}
+envlen2 <- envlen %>% 
+  dplyr::select( 2 ,3, 4, 5, 6)
+library(corrplot)
+ma <- cor(envlen2)
+reg3 <- glm(lepro ~ meantsm2 + meanchl2 + meansic2, 
+            family = gaussian,
+            data = envlen)
+plot(reg3)
+summary(reg3)
+library(visreg)
+visreg(reg3, "meanchl2", partial = F)
+qqPlot(reg3)
+```
+
+## GLM Environmental
+
+Debo trabajar ciertos componentes de los datosdatos
+
+- Comprobar distribución de Longitudes medias de krill
+- Cambiar a factor `Year` y `cellid`
+- Filtrar datos `NA`
+- Filtrar outliers en datos ambientales
+
+
+### Test de comportamiento de la variable de longitudes `lenpro` mediante 2 test; 1) Shapiro-Wilk `shapiro.test()` y Kolmogorov-Smirnov `ks.test()`
+
+```{r}
+shapiro.test(envlen$lepro)
+ks.test(envlen$lepro, "pnorm", mean(envlen$lepro), sd(envlen$lepro))
+```
+
+
+
+```{r}
+env1 <- glm(lepro ~ Year,
+            data = envlen,
+            family=gaussian(link="log"))
+r2(env1)
+summary(env1)
+check_model(env1)
+check_heteroscedasticity(env1)
+model_performance(env1)
+
+res <- resid(env1, type = "pearson")
+fit <- fitted(env1)
+plot(fit,res,ylab="Pearson residuals")
+qqnorm(res,main="")
+qqline(res,lty=2,col="red")
+```
+
+
+```{r}
+library(lme4)
+m3 <- lmer(lepro ~ Year + (1 + Year | meantsm2), data = envlen)
+model_performance(m3)
+
+model2 <- glm(avg ~ Year + 
+                Month, data = coutlength)
+r2(model2)
+check_model(model2)
+
+model3 <- glm(avg ~ Year + 
+                Month + 
+                asd_code, data = coutlength)
+r2(model3)
+check_model(model3)
+```
+
 
 # References
 
