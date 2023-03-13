@@ -394,7 +394,7 @@ dmp1=st_transform(dmp1, 6932)
 # Uso las agrupaciones de Strata
 strata <- st_read("~/DOCAS/Mapas/Antarctic_SHPfiles/Strata.shp",
                 quiet=T)
-strata=st_transform(strata, 6932)
+strata=st_transform(strata, "+proj=latlong +ellps=WGS84")
 ```
 
 ```{r maptest}
@@ -420,6 +420,105 @@ ssmap <- ggplot(ssmu481aa)+
   scale_alpha(guide="none")+
   theme_bw()
 ssmap
+```
+# Groupng Length data
+
+## SSMU CCAMLR
+
+Identificar tendencias temporales por cada SSSMU para tener un mejor detalle del comportamiento de la variable a traves del tiempo en el espacio definido.
+
+
+De forma experimental hago una grilla sobre las SSMU.
+
+```{r ssmu1}
+names(ohbio4)
+ohbio5 <- ohbio4 %>% 
+  filter(asd_code==481) %>% 
+  dplyr::select(6, 7, 8, 9, 10, 11,) 
+ohbio6 <- st_as_sf(ohbio5 %>% 
+                     drop_na(latitude_set_end), 
+                   coords = c("longitude_set_end", "latitude_set_end"),  
+                  crs = "+proj=latlong +ellps=WGS84")
+```
+
+hago la grilla
+```{r ssmu1}
+
+Grid<- suba1aa  %>% #pm481 es el plot base original linea 481
+  sf::st_make_grid(cellsize = c(1,0.5)) %>% # para que quede cuadrada
+  sf::st_cast("MULTIPOLYGON") %>%
+  sf::st_sf()  %>%  # objeto en spatial feature
+  dplyr::mutate(cellid = row_number()) 
+
+# Clean the input data by removing duplicate vertices and making the object topologically valid
+grid3 <- st_make_valid(Grid)
+
+# the first object drives the output geometry
+grilen <- grid3 %>%
+  st_join(ohbio6) %>% 
+  group_by(cellid)
+
+names(grilen)
+dim(grilen)
+class(grilen)
+
+```
+
+Testeo el mapa hielo
+```{r ssmugri}
+gl <- ggplot() +
+   geom_sf(data=grilen %>% 
+             drop_na(length_total_cm), 
+           aes(fill = length_total_cm), 
+           alpha=0.7, color=NA) +
+  scale_fill_viridis_b(option="G",
+                       name="Krill Length Fishery (cm.)",
+                       breaks = seq(0,8,1),
+                       direction=-1)+
+  geom_sf(data = suba1aa, fill=NA, col=2)+
+  geom_sf(data = coast2, colour="black", fill="grey")+
+  facet_wrap(~Year, ncol=6)+
+  theme(panel.background = element_rect(fill = 'aliceblue'),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())+
+  # ylim(-70, -60)+
+  # xlim(-70, -50)
+  # another kind projection
+  ylim(230000, 2220000)+
+  xlim(-3095349 , -1858911)+
+  #coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
+  coord_sf(crs = 6932)
+gl
+```
+
+
+join data intro `strata`object
+
+```{r}
+ohbio7 <- ohbio6 %>% 
+  dplyr::group_by(Year, geometry, gear_type) %>% 
+  dplyr::summarise(meanl=mean(length_total_cm))
+
+
+
+# comprobar si hay geometrías no válidas
+invalidos <- st_is_valid(ohbio7)
+
+
+
+# the first object drives the output geometry
+gritall<- strata %>%
+  st_join(ohbio8) %>% 
+  group_by(geometry)
+
+names(grilen)
+head(grilen)
+class(grilen)
+
+datae <- load("~/DOCAS/Data/KrillLows/DataEnvKrill2.RData")
+
+get(datae)
+
 ```
 
 # References
