@@ -56,9 +56,13 @@ library(ncdf4)
 library(readr)
 library(data.table)
 library(ggridges)
-library(patchwork)
+library(ggpubr)
 library(knitr)
 library(kableExtra)
+# stat test
+library(corrplot)
+library(outliers)
+library(visreg)
 ```
 
 ## Length structure krill 48 subarea
@@ -533,32 +537,13 @@ Join merge object in a new data base.
 ```{r}
 names(grilen3)
 names(envgru)
-
-envlen <- merge( grilen3, envgru, by = c("cellid", "Year"))
-
-```
-# Coorelation Analysis 
-
-## Simple correlation
-
-```{r}
-envlen2 <- envlen %>% 
-  dplyr::select( 2 ,3, 4, 5, 6)
-library(corrplot)
-ma <- cor(envlen2)
-reg3 <- glm(lepro ~ meantsm2 + meanchl2 + meansic2, 
-            family = gaussian,
-            data = envlen)
-plot(reg3)
-summary(reg3)
-library(visreg)
-visreg(reg3, "meanchl2", partial = F)
-qqPlot(reg3)
+envlen <- merge(grilen3, envgru, 
+                 by = c("cellid", "Year"))
 ```
 
-## GLM Environmental
+## GLM Length-Environmental
 
-Debo trabajar ciertos componentes de los datosdatos
+Debo trabajar ciertos componentes de los datos para poder hacer el analisis bajo supuestos estructurales.
 
 - Comprobar distribución de Longitudes medias de krill
 - Cambiar a factor `Year` y `cellid`
@@ -571,25 +556,166 @@ Debo trabajar ciertos componentes de los datosdatos
 ```{r}
 shapiro.test(envlen$lepro)
 ks.test(envlen$lepro, "pnorm", mean(envlen$lepro), sd(envlen$lepro))
+tal<-ggplot(envlen, aes(x=lepro)) + 
+  geom_histogram(color="red", fill="white")+
+  theme_minimal()+
+  labs(x="Length Mean Krill (cm.)",
+       y="Frecuency")
+tal
+```
+### Cambiar a factor `Year` y `cellid`
+
+```{r}
+envlen$Year<-as.factor(envlen$Year)
+envlen$cellid<-as.factor(envlen$cellid)
+glimpse(envlen)
+```
+### Filtrar datos `NA`
+
+```{r}
+# Are there missing values?
+colSums(is.na(envlen))
+```
+### Filter outliers environmental and biological data
+
+Test trought plot all variables in `envlen` object
+```{r}
+boxsic <- ggplot(envlen)+
+  geom_boxplot(aes(Year, meansic2),
+               outlier.colour = "red")+
+  theme_minimal()
+boxtsm <- ggplot(envlen)+
+  geom_boxplot(aes(Year, meantsm2),
+               outlier.colour = "red")+
+  theme_minimal()
+boxchl <- ggplot(envlen)+
+  geom_boxplot(aes(Year, meanchl2),
+               outlier.colour = "red")+
+  theme_minimal()
+ggarrange(boxsic, boxtsm, boxchl, nrow = 3)
+
+```
+got off sic outliers data and again
+
+```{r}
+envlen2 <- envlen %>% 
+  filter(meansic2<100)
+
+#plot 2
+         
+boxsic2 <- ggplot(envlen2)+
+  geom_boxplot(aes(Year, meansic2),
+               outlier.colour = "red")+
+  theme_minimal()
+boxtsm2 <- ggplot(envlen2)+
+  geom_boxplot(aes(Year, meantsm2),
+               outlier.colour = "red")+
+  theme_minimal()
+boxchl2 <- ggplot(envlen2)+
+  geom_boxplot(aes(Year, meanchl2),
+               outlier.colour = "red")+
+  theme_minimal()
+
+p<-ggplot(envlen2, aes(x=meansic2)) + 
+  geom_histogram(color="black", fill="white")+
+  theme_minimal()
+
+q<-ggplot(envlen2, aes(x=meantsm2)) + 
+  geom_histogram(color="black", fill="white")+
+  theme_minimal()
+
+t<-ggplot(envlen2, aes(x=meanchl2)) + 
+  geom_histogram(color="black", fill="white")+
+  theme_minimal()
+
+ggarrange(boxsic2, boxtsm2, boxchl2, p, q, t, nrow = 2, ncol=3)
+```
+A su vez un plo t de hist 
+
+# Correlation Analysis 
+
+## Simple correlation identification
+
+```{r}
+class(envlen3)
+envlen3 <- as.data.frame(envlen2)
+report(envlen4)
+envlen4 <- envlen3 %>% 
+  dplyr::select(3, 4, 5, 6) %>% 
+  
+library(MASS)
+
+
+plot(envlen2$meantsm2, envlen2$lepro, pch = 19, col = "lightblue")
+abline(lm(envlen2$lepro ~ envlen2$meantsm2), col = "red", lwd = 3)
+# Correlación de Pearson
+text(paste("Correlación:", round(cor(envlen2$meantsm2, envlen2$lepro), 2)), x = 272, y = 5)
+
+library(PerformanceAnalytics)
+
+chart.Correlation(envlen4, histogram = TRUE, method = "pearson")
+
+library(psych)
+
+pairs.panels(envlen4,
+             smooth = TRUE,      # Si TRUE, dibuja ajuste suavizados de tipo loess
+             scale = FALSE,      # Si TRUE, escala la fuente al grado de correlación
+             density = TRUE,     # Si TRUE, añade histogramas y curvas de densidad
+             ellipses = TRUE,    # Si TRUE, dibuja elipses
+             method = "spearman", # Método de correlación (también "spearman" o "kendall")
+             pch = 21,           # Símbolo pch
+             lm = FALSE,         # Si TRUE, dibuja un ajuste lineal en lugar de un ajuste LOESS
+             cor = TRUE,         # Si TRUE, agrega correlaciones
+             jiggle = FALSE,     # Si TRUE, se añade ruido a los datos
+             factor = 2,         # Nivel de ruido añadido a los datos
+             hist.col = 4,       # Color de los histogramas
+             stars = TRUE,       # Si TRUE, agrega el nivel de significación con estrellas
+             ci = TRUE)          # Si TRUE, añade intervalos de confianza a los ajustes
+
+report(rep)
+library(psych)
+
+corPlot(envlen2, cex = 1.2, main = "Matriz de correlación")
+ma <- cor(envlen4)
+reg3 <- glm(lepro ~ meantsm2 + meanchl2 + meansic2, 
+            family = gaussian,
+            data = envlen)
+plot(reg3)
+summary(reg3)
+
+visreg(reg3, "meanchl2", partial = F)
+qqPlot(reg3)
+```
+
+```{r}
+boxp <- ggplot(envlen %>% 
+                 filter(meansic2<100))+
+  geom_boxplot(aes(Year, meansic2))+
+  theme_minimal()
+boxp
+
+envlenhis <- envlen %>% 
+  filter(meansic2<100) 
+
+hist(log(envlenhis$meansic2))
+
+# Identificar y sacar los outliers utilizando el método de Tukey
+envsic_clean <- rm.outlier(envlen$meansic2, fill = TRUE, median = FALSE)
 ```
 
 
 
 ```{r}
 env1 <- glm(lepro ~ Year,
-            data = envlen,
-            family=gaussian(link="log"))
+            data = envlen)
 r2(env1)
 summary(env1)
 check_model(env1)
 check_heteroscedasticity(env1)
 model_performance(env1)
-
-res <- resid(env1, type = "pearson")
-fit <- fitted(env1)
-plot(fit,res,ylab="Pearson residuals")
-qqnorm(res,main="")
-qqline(res,lty=2,col="red")
+drop1(env1)
+anova(env1, test="Chi")
+summary(env1)
 ```
 
 
