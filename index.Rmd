@@ -58,7 +58,9 @@ library(raster)
 library(sf)
 library(CCAMLRGIS)
 library(here)
-library(easystats) # analisis estadisticos post
+library(easystats)
+library(see) # for plotting
+library(ggraph) # needs to be loaded# analisis estadisticos post
 library(ncdf4)
 library(readr)
 library(data.table)
@@ -716,70 +718,138 @@ envlen4 <- envlen3 %>%
   dplyr::select(3, 4, 5, 6) %>%
 ```
 
-
-
+Plot to show correlation trough different ways.
+First, the matri correlation
 
 ```{r}
-chart.Correlation(envlen4, 
-                  histogram = TRUE, 
-                  method = "pearson")
+kableExtra::kable(cor(envlen4)) %>% 
+  kable_styling()
+# covariance matrix
+kableExtra::kable(cov(envlen4)) %>% 
+  kable_styling()
+```
 
+```{r message=FALSE, warning=FALSE}
 pairs.panels(envlen4,
              smooth = TRUE,      
              scale = FALSE,      
              density = TRUE,     
              ellipses = TRUE,  
-             method = "spearman",
+             method = "pearson",
              pch = 21,           
              lm = FALSE,        
              cor = TRUE,         
              jiggle = FALSE,     
              factor = 2,        
              hist.col = 4,       # Color de los histogramas
-             stars = TRUE)        
-
-report(rep)
-library(psych)
-
-corPlot(envlen4, cex = 1.2, main = "Matriz de correlación")
-ma <- cor(envlen4)
-
-plot(reg3)
-summary(reg3)
-
-visreg(reg3, "meanchl2", partial = F)
-qqPlot(reg3)
+             stars = TRUE)
 ```
 
-```{r}
-boxp <- ggplot(envlen %>% 
-                 filter(meansic2<100))+
-  geom_boxplot(aes(Year, meansic2))+
-  theme_minimal()
-boxp
 
-envlenhis <- envlen %>% 
-  filter(meansic2<100) 
-
-hist(log(envlenhis$meansic2))
-
-# Identificar y sacar los outliers utilizando el método de Tukey
-envsic_clean <- rm.outlier(envlen$meansic2, fill = TRUE, median = FALSE)
+```{r message=FALSE, warning=FALSE}
+corPlot(envlen4, 
+                 cex = 0.5, 
+                 main = "Matriz de correlación")
 ```
 
+
+```{r message=FALSE, warning=FALSE}
+resu <- correlation(envlen4)
+resu
+summary(resu, redundant=TRUE)
+
+resu %>%
+  summary(redundant = TRUE) %>%
+  plot()
+
+
+plot(correlation(envlen4, partial = TRUE)) +
+  scale_edge_color_continuous(low = "#000004FF", high = "#FCFDBFFF")
+```
+
+Here we can identify the correlation that exists between krill length and chlorophyla (-) and krill length and SST (+)
+
+
+## GLM models
+
+Come back with `envlen2` object.
 ```{r}
+names(envlen2)
+# [1] "cellid"   "Year"     "lepro"    "meansic2" "meanchl2"
+# [6] "meantsm2" "geometry"
 env1 <- glm(lepro ~ Year,
-            data = envlen3)
-report(env1)
-r2(env1)
-summary(env1)
-check_model(env1)
-check_heteroscedasticity(env1)
-model_performance(env1)
-drop1(env1)
-anova(env1, test="Chi")
-summary(env1)
+            data = envlen2)
+env2 <- glm(lepro ~ Year + 
+              meansic2,
+            data = envlen2)
+env3 <- glm(lepro ~ Year + 
+              meansic2 +
+              meanchl2 ,
+            data = envlen2)
+env4 <- glm(lepro ~ Year + 
+              meansic2 +
+              meanchl2 + 
+              meantsm2 ,
+            data = envlen2)
+#spatial component
+env5 <- glm(lepro ~ Year + 
+              meansic2 +
+              meanchl2 + 
+              meantsm2 +
+              cellid,
+            data = envlen2)
+check_model(env4)
+
 ```
+test with @Ludecke2021
+
+```{r}
+check_model(env1)
+check_model(env2)
+check_model(env3)
+check_model(env4)
+check_model(env5)
+```
+
+
+```{r}
+plot(compare_performance(env1, 
+                         env2, 
+                         env3,
+                         env4,
+                         env5,
+                         rank = TRUE),
+     name="GLM Model to length krill data vs Env")
+
+comp <- compare_performance(env1, 
+                         env2, 
+                         env3,
+                         env4,
+                    env5)
+```
+
+Comparative table acrosss models.
+```{r}
+kableExtra::kable(comp) %>% 
+  kable_styling()
+```
+
+
+```{r}
+tmp <- anova(env4,test="Chisq")
+tmp <- as.data.frame(tmp)
+tmp$PercDevExp <- 100*(tmp$Deviance/(max(tmp[,4])-min(tmp[,4])))
+row.names(tmp)[tmp$PercDevExp >= 5.0]   
+DevTablePosObs <- tmp
+DevTablePosObs
+termplot(env4,se=T,ylim="free")
+env4$coefficients
+
+```
+
+
+
+## GLMM models
 
 ```{r}
 library(lme4)
