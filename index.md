@@ -1,5 +1,6 @@
 ---
-title: "Krill Length 48.1"
+title: "Krill Length 48.1 Correlation Analysis with Environmental Drivers"
+subtitle: "Alternative Analysis to incorporate in Krill Stock Assessment Model 48.1 SubArea"
 author: "Mauricio Mardones"
 date:  "14 March, 2023"
 bibliography: seaice.bib
@@ -31,7 +32,9 @@ rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE,
                       warning = FALSE,
-                      fig.align = 'center')
+                      fig.align = 'center',
+                      dev = 'jpeg',
+                      dpi = 300)
 #XQuartz is a mess, put this in your onload to default to cairo instead
 options(bitmapType = "cairo") 
 # (https://github.com/tidyverse/ggplot2/issues/2655)
@@ -42,11 +45,16 @@ options(bitmapType = "cairo")
 
 The following document intends to carry out a complementary
 methodological analysis to correlate environmental variables with the
-population dynamics of krill (*Euphausia superba*), in this case, with a biological component like lengths from fishery monitoring. 
+population dynamics of krill (*Euphausia superba*), in this case, with a
+biological component like lengths from fishery monitoring.
 
 # Hypothesis
 
-The primary inquiry pertains to the environmental effects of distinct physical and oceanographic factors in the Southern Ocean on the krill population. Our aim is to examine the population structure's evolution via krill size and determine whether any changes were driven by environmental factors across any of its dimensions.
+The primary inquiry pertains to the environmental effects of distinct
+physical and oceanographic factors in the Southern Ocean on the krill
+population. Our aim is to examine the population structure via krill
+length component and determine whether any changes were driven by
+environmental factors across any of its dimensions.
 
 # Objective
 
@@ -94,7 +102,8 @@ library(sjPlot)
 Another important piece of information for a stock evaluation refers to
 the biological components such as average sizes and weights across areas
 and years. To do this, we will explore the biological data and prepare
-the output to add it into stock assessment integrate model [@Methot2013].
+the output to add it into stock assessment integrate model
+[@Methot2013].
 
 the idea is to correlate mean lengths with SIC.
 
@@ -151,7 +160,8 @@ dim(ohbio2)
 ```
 
 Firsts glance. Test how many register have by year. In this case,
-`length_total_cm` by season ccamlr. Same exercise in date period `date_catchperiod_start` to separate dates.
+`length_total_cm` by season ccamlr. Same exercise in date period
+`date_catchperiod_start` to separate dates.
 
 
 ```r
@@ -300,8 +310,8 @@ table(ohbio2$trawl_technique)%>%
 
 ## Plots
 
-Filter data regarding to previous glances. Follow with a quick glimpse to
-all 48 subarea length composition from monitoring fisheries.
+Filter data regarding to previous glances. Follow with a quick glimpse
+to all 48 subarea length composition from monitoring fisheries.
 
 
 ```r
@@ -332,8 +342,10 @@ jz <- ggplot(ohbio4 %>%
 jz
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
-Another way to watch this data is regarding thecniches trawl like Figure \@ref(fig:lenthtrwal).
+<img src="index_files/figure-html/unnamed-chunk-9-1.jpeg" style="display: block; margin: auto;" />
+
+Another way to watch this data is regarding thecniches trawl like Figure
+\@ref(fig:lenthtrwal).
 
 
 ```r
@@ -364,7 +376,7 @@ trwal <- ggplot(ohbio4 %>%
 trwal
 ```
 
-<img src="index_files/figure-html/lenthtrwal-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/lenthtrwal-1.jpeg" style="display: block; margin: auto;" />
 
 Same plot by Sub Area and month trought year. With this kind of plot, we
 can see the recruit power interannually (Figure \@ref(fig:lengthmonth).
@@ -398,7 +410,8 @@ ymasd <- ggplot(ohbio4 %>%
 ymasd
 ```
 
-<img src="index_files/figure-html/lengthmonth-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/lengthmonth-1.jpeg" style="display: block; margin: auto;" />
+
 Just 48.1 SubArea plot
 
 
@@ -463,7 +476,7 @@ hi <- ggplot(ohbio4)+
 ggarrange(box, hi, ncol = 2)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-11-1.jpeg" style="display: block; margin: auto;" />
 
 Mean length in time series by Subarea.
 
@@ -490,7 +503,7 @@ pmea <- ggplot(coutlength %>%
 pmea
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-12-1.jpeg" style="display: block; margin: auto;" />
 
 by month and year only 48.1
 
@@ -511,12 +524,14 @@ pmea481 <- ggplot(coutlength %>%
 pmea481
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-13-1.jpeg" style="display: block; margin: auto;" />
+
 (Probar datos con RaadTools library [@Raadtools2022])
 
 ## Maps length data
 
-First thing is get different rater layer to join krill data length according different porpoises.
+First thing is get different rater layer to join krill data length
+according different porpoises.
 
 
 ```r
@@ -547,6 +562,7 @@ strata <- st_read("~/DOCAS/Mapas/Antarctic_SHPfiles/Strata.shp",
                 quiet=T)
 strata=st_transform(strata, "+proj=latlong +ellps=WGS84")
 ```
+
 Test Strata maps
 
 
@@ -575,8 +591,10 @@ ssmap <- ggplot()+
 ssmap
 ```
 
-<img src="index_files/figure-html/maptest-1.png" style="display: block; margin: auto;" />
-Test Strata SSMU 
+<img src="index_files/figure-html/maptest-1.jpeg" style="display: block; margin: auto;" />
+
+Test Strata SSMU
+
 
 ```r
 # y testeo el mapa
@@ -603,7 +621,7 @@ ssmumap <- ggplot()+
 ssmumap
 ```
 
-<img src="index_files/figure-html/maptest2-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/maptest2-1.jpeg" style="display: block; margin: auto;" />
 
 ## Grouping Length data into Grid
 
@@ -633,7 +651,10 @@ ohbio6 <- st_as_sf(ohbio5 %>%
                   crs = "+proj=latlong +ellps=WGS84")
 ```
 
-This grid has the same characteristics as the environmental data grids that will be called up later. This grid is 1x0.5 degrees which allows a clear visualization of the processes, whether biological and/or environmental.
+This grid has the same characteristics as the environmental data grids
+that will be called up later. This grid is 1x0.5 degrees which allows a
+clear visualization of the processes, whether biological and/or
+environmental.
 
 
 ```r
@@ -696,13 +717,14 @@ gl <- ggplot() +
 gl
 ```
 
-<img src="index_files/figure-html/plogri-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/plogri-1.jpeg" style="display: block; margin: auto;" />
 
 Load environmental data to merge with length.
 
 
 
 Get data specific object
+
 
 ```r
 ls()
@@ -30817,7 +30839,10 @@ analisis bajo supuestos estructurales.
 -   Filtrar datos `NA`
 -   Filtrar outliers en datos ambientales
 
-### Test de comportamiento de la variable de longitudes `lenpro` mediante 2 test; 1) Shapiro-Wilk `shapiro.test()` y Kolmogorov-Smirnov `ks.test()`
+### Test Correlation
+
+Test de comportamiento de la variable de longitudes `lenpro` mediante 2
+test; 1) Shapiro-Wilk `shapiro.test()` y Kolmogorov-Smirnov `ks.test()`
 
 
 ```r
@@ -30854,7 +30879,7 @@ tal<-ggplot(envlen, aes(x=lepro)) +
 tal
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-18-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-18-1.jpeg" style="display: block; margin: auto;" />
 
 ### Cambiar a factor `Year` y `cellid`
 
@@ -30911,8 +30936,10 @@ boxchl <- ggplot(envlen)+
 ggarrange(boxsic, boxtsm, boxchl, nrow = 3)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-21-1.png" style="display: block; margin: auto;" />
-is necessary get off outliers from Sea ice index. Get environmental outliers data and again...
+<img src="index_files/figure-html/unnamed-chunk-21-1.jpeg" style="display: block; margin: auto;" />
+
+is necessary get off outliers from Sea ice index. Get environmental
+outliers data and again...
 
 
 ```r
@@ -30949,7 +30976,7 @@ t<-ggplot(envlen2, aes(x=meanchl2)) +
 ggarrange(boxsic2, boxtsm2, boxchl2, p, q, t, nrow = 2, ncol=3)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-22-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-22-1.jpeg" style="display: block; margin: auto;" />
 
 ## Correlation Analysis
 
@@ -30992,15 +31019,21 @@ data being used is ordinal, which here means that the numbers do not
 indicate quantity, but rather they signify a position of place of the
 subject's standing (e.g. 1st, 2nd, 3rd, etc.)
 
-$r_s = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^n (x_i - \bar{x})^2}\sqrt{\sum_{i=1}^n (y_i - \bar{y})^2}}$
+$\begin{aligned} r_s = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^n (x_i - \bar{x})^2}\sqrt{\sum_{i=1}^n (y_i - \bar{y})^2}} \end{aligned}$
 
-- Pearson Product-Moment Coefficient
+-   Pearson Product-Moment Coefficient
 
-This is the most widely used correlation analysis formula, which measures the strength of the ‘linear’ relationships between the raw data from both variables, rather than their ranks. This is an dimensionless coefficient, meaning that there are no data-related boundaries to be considered when conducting analyses with this formula, which is a reason why this coefficient is the first formula researchers try.
+This is the most widely used correlation analysis formula, which
+measures the strength of the 'linear' relationships between the raw data
+from both variables, rather than their ranks. This is an dimensionless
+coefficient, meaning that there are no data-related boundaries to be
+considered when conducting analyses with this formula, which is a reason
+why this coefficient is the first formula researchers try.
 
-$r = 1- \frac{6\sum_{i=1}^n D_{i}^n}{n (n^2 - 1)}$
+$\begin{aligned} r = 1- \frac{6\sum_{i=1}^n D_{i}^n}{n (n^2 - 1)}\end{aligned}$
 
 (Is posible report outpus by @Report2023)
+
 
 ```r
 # change to data frame
@@ -31009,8 +31042,8 @@ envlen4 <- envlen3 %>%
   dplyr::select(3, 4, 5, 6)
 ```
 
-Plot to show correlation trough different ways.
-First, the matri correlation
+Plot to show correlation trough different ways. First, the matri
+correlation
 
 
 ```r
@@ -31125,8 +31158,7 @@ pairs.panels(envlen4,
              stars = TRUE)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-25-1.png" style="display: block; margin: auto;" />
-
+<img src="index_files/figure-html/unnamed-chunk-25-1.jpeg" style="display: block; margin: auto;" />
 
 
 ```r
@@ -31167,7 +31199,9 @@ summary(resu, redundant=TRUE)
 ## p-value adjustment method: Holm (1979)
 ```
 
-We can identify through a correlation matrix the data of our set, whether it is positive or negative. See Figure \@ref(fig:coorplot).
+We can identify through a correlation matrix the data of our set,
+whether it is positive or negative. See Figure \@ref(fig:coorplot).
+
 
 ```r
 resu %>%
@@ -31176,10 +31210,9 @@ resu %>%
 ```
 
 <div class="figure" style="text-align: center">
-<img src="index_files/figure-html/corrplot-1.png" alt="Correlation Matrix"  />
+<img src="index_files/figure-html/corrplot-1.jpeg" alt="Correlation Matrix"  />
 <p class="caption">Correlation Matrix</p>
 </div>
-
 
 
 ```r
@@ -31187,14 +31220,15 @@ plot(correlation(envlen4, partial = TRUE)) +
   scale_edge_color_continuous(low = "#000004FF", high = "#FCFDBFFF")
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-27-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-27-1.jpeg" style="display: block; margin: auto;" />
 
-Here we can identify the correlation that exists between krill length and chlorophyla (-) and krill length and SST (+)
-
+Here we can identify the correlation that exists between krill length
+and chlorophyla (-) and krill length and SST (+)
 
 ## GLM models
 
 Come back with `envlen2` object.
+
 
 ```r
 names(envlen2)
@@ -31229,6 +31263,7 @@ env5 <- glm(lepro ~ Year +
               cellid,
             data = envlen2)
 ```
+
 test with @Ludecke2021
 
 
@@ -31236,26 +31271,25 @@ test with @Ludecke2021
 check_model(env1)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-29-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-29-1.jpeg" style="display: block; margin: auto;" />
 
 ```r
 check_model(env2)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-29-2.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-29-2.jpeg" style="display: block; margin: auto;" />
 
 ```r
 check_model(env3)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-29-3.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-29-3.jpeg" style="display: block; margin: auto;" />
 
 ```r
 check_model(env4)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-29-4.png" style="display: block; margin: auto;" />
-
+<img src="index_files/figure-html/unnamed-chunk-29-4.jpeg" style="display: block; margin: auto;" />
 
 
 ```r
@@ -31268,9 +31302,10 @@ plot(compare_performance(env1,
      name="GLM Model to length krill data vs Env")
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-30-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-30-1.jpeg" style="display: block; margin: auto;" />
 
 Comparative table acrosss models.
+
 
 ```r
 comp <- compare_performance(env1, 
@@ -31368,27 +31403,35 @@ kableExtra::kable(comp) %>%
 </tbody>
 </table>
 
-
 ## GLMM models
 
-Random effects are a way to model variability in data that comes from factors that cannot be directly measured or controlled. In the context of statistical models, random effects refer to variables that are assumed to have an unknown probability distribution, and are included in the model to explain some of the variation in the data.
+Random effects are a way to model variability in data that comes from
+factors that cannot be directly measured or controlled. In the context
+of statistical models, random effects refer to variables that are
+assumed to have an unknown probability distribution, and are included in
+the model to explain some of the variation in the data.
 
-For example, in a study comparing the test scores of students at different schools, random effects refer to differences between schools that cannot be explained by variables measured in the study, such as students' socioeconomic status. These differences may be caused by factors such as the quality of teaching, school culture, or geographic location.
+For example, in a study comparing the test scores of students at
+different schools, random effects refer to differences between schools
+that cannot be explained by variables measured in the study, such as
+students' socioeconomic status. These differences may be caused by
+factors such as the quality of teaching, school culture, or geographic
+location.
 
-Random effects are often modeled by using mixed effects models, which combine random and fixed effects in the same model. Fixed effects are those that are assumed to be constant for all study units and are directly measured, while random effects are those that are assumed to vary randomly across study units and cannot be directly measured.
+Random effects are often modeled by using mixed effects models, which
+combine random and fixed effects in the same model. Fixed effects are
+those that are assumed to be constant for all study units and are
+directly measured, while random effects are those that are assumed to
+vary randomly across study units and cannot be directly measured.
 
-In short, random effects are a way of modeling variability in data that cannot be directly explained by the variables measured in the study, and are included in the model to improve the precision of the estimates and reduce the potential for bias [@McCulloch2001].
+In short, random effects are a way of modeling variability in data that
+cannot be directly explained by the variables measured in the study, and
+are included in the model to improve the precision of the estimates and
+reduce the potential for bias [@McCulloch2001].
 
-In this cae we try test spatial componenten in `cellid` variable like random effects with `lme4` package [@Bates2015].
+In this cae we try test spatial componenten in `cellid` variable like
+random effects with `lme4` package [@Bates2015].
 
-
-```r
-names(envlen$meantsm2)
-```
-
-```
-## NULL
-```
 
 ```r
 env1m <- lmer(lepro ~ Year + 
@@ -31397,7 +31440,6 @@ env1m <- lmer(lepro ~ Year +
              meantsm2 + (1|cellid), 
            data = envlen)
 ```
-
 
 
 ```r
@@ -31428,10 +31470,30 @@ pest <- plot_model(env1m,type = "est",
 ggarrange(pre, pest, ncol = 2)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-33-1.png" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-33-1.jpeg" style="display: block; margin: auto;" />
+
 # Conclusion
 
-On the one hand, the models with mixed effects serve to verify the influence of the spatial component, in this case each cell y in which the data of the dependent variable (krill sizes) and the independent variable (environmental variables) were considered.
+-   On the one hand, the models with mixed effects serve to verify the
+    influence of the spatial component, in this case each cell y in
+    which the data of the dependent variable (krill sizes) and the
+    independent variable (environmental variables) were considered.
+
+-   The influence of environmental variables on the sizes of the krill
+    fishery is corroborated. The environmental variable with the
+    greatest impact on krill sizes is Chlorophyll in negative terms. In
+    other words, the more chlorophyll in the environment, the sizes
+    decrease because there is greater recruitment due to the abundance
+    of substrate for the krill population.
+
+-   In a way, it is proof that the krill population structure is
+    influenced not only by fishing pressure, but also by environmental
+    conditions.
+
+-   With these results, the environmental component is solidly
+    incorporated into the krill stock assessment model in the Antarctic
+    Peninsula, specifically in Subarea 48.1.
+
 # References
 
 Sea ice data is from Giovanni NASA browser
