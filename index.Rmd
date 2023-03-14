@@ -552,7 +552,7 @@ datae <- load("~/DOCAS/Data/KrillLows/DataEnvKrill.RData")
 
 Get data specific object
 
-```{r}
+```{r include=FALSE}
 ls()
 get("dataenvf")
 ```
