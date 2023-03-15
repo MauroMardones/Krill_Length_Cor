@@ -67,7 +67,6 @@ history.
 library(reshape2)
 library(tidyverse)
 library(plyr)
-library(lubridate)
 library(raster)
 library(sf)
 library(CCAMLRGIS)
@@ -542,6 +541,94 @@ gl <- ggplot() +
   #coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
   coord_sf(crs = 6932)
 gl
+```
+
+### Length structure into STRATA
+
+Length composition by Strata CCAMLR to visualization first. First step is agrupo and kion data into to poligons strata.
+
+```{r wranlingdata}
+class(ohbio6)
+dim(ohbio6)
+glimpse(ohbio6)
+
+class(strata)
+glimpse(strata)
+dim(strata)
+
+ohbiopro <- ohbio6 %>%
+  dplyr::group_by(gear_type, Year, Month, geometry) %>% 
+  dplyr::summarize(tapro = mean(length_total_cm))
+
+# comoprobar si tengo datos duplicados
+strata2 <- st_make_valid(strata)
+ohbio62 <- st_make_valid(ohbio6)
+
+sf3 <- st_join(strata2, ohbiopro)
+sf4 <- st_join(strata2, ohbio6)
+dim(sf3)
+names(sf3)
+```
+
+
+```{r plotlenstrata}
+lentra <- sf4 %>%
+  as_data_frame(sf4) %>% 
+  dplyr::group_by(Year, ID, Month) %>% 
+  dplyr::summarize(tapro2 = mean(tapro))
+```
+
+scattter plot lenght data
+```{r}
+lentraplot <- ggplot(lentra %>% 
+                   filter(Year>2000), 
+               aes(Year, tra),
+               fill=ID)+
+    geom_point(alpha=0.5, 
+               shape=21, 
+               show.legend = T) +
+    stat_smooth(method = "loess",
+                col="red")+
+    theme_bw()+ 
+    facet_wrap(.~ID)+
+    # scale_x_continuous(breaks = seq(from = 2000, to = 2020, by = 2))+
+    #scale_y_discrete(breaks = seq(from = 1, to = 13, by = 1))+
+    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
+    guides(fill = guide_legend(reverse=F))+
+    scale_fill_viridis_c(option="F")+
+    ylab("") +
+    xlab("") 
+lentraplot
+
+```
+histogram length data
+
+```{r}
+jzstrata <- ggplot(sf3 %>% 
+               filter(Year>2000),
+             aes(x=tapro, 
+                 y = as.factor(Year), 
+                 fill=ID))+
+  #geom_joy(alpha=0.9) +
+  geom_density_ridges(stat = "binline", bins = 100, 
+                      scale = 3, 
+                      draw_baseline = FALSE,
+                      alpha=0.9)+
+  facet_wrap(.~ID, ncol=3) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 1))+
+  scale_y_discrete(breaks = seq(from = 2000, 
+                                to = 2020, by = 1))+
+  scale_fill_viridis_d(name="SubArea",
+                       option="F")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  xlim(0,10)+
+  xlab("Longitud (cm.)")+
+  ylab("")
+jzstrata
 ```
 
 Load environmental data to merge with length.
