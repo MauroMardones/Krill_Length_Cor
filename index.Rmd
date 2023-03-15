@@ -63,10 +63,12 @@ time series of the environmental variable to incorporate into the stock
 assessment process. Similar work in @Wang2021 but with a longest fishery
 history.
 
+
 ```{r message=FALSE}
 library(reshape2)
 library(tidyverse)
 library(plyr)
+library(lubridate)
 library(raster)
 library(sf)
 library(CCAMLRGIS)
@@ -566,36 +568,31 @@ ohbio62 <- st_make_valid(ohbio6)
 
 sf3 <- st_join(strata2, ohbiopro)
 sf4 <- st_join(strata2, ohbio6)
-dim(sf3)
+dim(sf4)
 names(sf3)
 ```
 
-
-```{r plotlenstrata}
-lentra <- sf4 %>%
-  as_data_frame(sf4) %>% 
-  dplyr::group_by(Year, ID, Month) %>% 
-  dplyr::summarize(tapro2 = mean(tapro))
+```{r saveda, eval=FALSE}
+save("sf4", file = "sf4.RData")
 ```
 
 scattter plot lenght data
-```{r}
-lentraplot <- ggplot(lentra %>% 
-                   filter(Year>2000), 
-               aes(Year, tra),
-               fill=ID)+
-    geom_point(alpha=0.5, 
+```{r warning=F}
+lentraplot <- ggplot(sf3 %>% 
+                   filter(Year>2000,
+                      ID !="Outer"), 
+               aes(Year, tapro,
+               fill=Month))+
+    geom_point(alpha=0.3, 
                shape=21, 
                show.legend = T) +
     stat_smooth(method = "loess",
                 col="red")+
     theme_bw()+ 
     facet_wrap(.~ID)+
-    # scale_x_continuous(breaks = seq(from = 2000, to = 2020, by = 2))+
-    #scale_y_discrete(breaks = seq(from = 1, to = 13, by = 1))+
     theme(axis.text.x = element_text(angle = 90, hjust = 2))+
     guides(fill = guide_legend(reverse=F))+
-    scale_fill_viridis_c(option="F")+
+    scale_fill_viridis_c(option="G")+
     ylab("") +
     xlab("") 
 lentraplot
@@ -603,32 +600,60 @@ lentraplot
 ```
 histogram length data
 
+
 ```{r}
-jzstrata <- ggplot(sf3 %>% 
-               filter(Year>2000),
-             aes(x=tapro, 
+jzstrata <- ggplot(sf4 %>% 
+               filter(Year>2000,
+                      ID !="Outer"),
+             aes(x=length_total_cm, 
                  y = as.factor(Year), 
                  fill=ID))+
-  #geom_joy(alpha=0.9) +
-  geom_density_ridges(stat = "binline", bins = 100, 
-                      scale = 3, 
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.9, 
                       draw_baseline = FALSE,
                       alpha=0.9)+
-  facet_wrap(.~ID, ncol=3) +   
+  facet_wrap(.~ID, ncol=7) +   
   geom_vline(xintercept = 3.6, color = "red")+
   scale_x_continuous(breaks = seq(from = 1, to = 10, 
-                                  by = 1))+
+                                  by = 2))+
   scale_y_discrete(breaks = seq(from = 2000, 
                                 to = 2020, by = 1))+
   scale_fill_viridis_d(name="SubArea",
                        option="F")+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, 
-                                   hjust = 1))+
-  xlim(0,10)+
+  theme_minimal()+
   xlab("Longitud (cm.)")+
   ylab("")
 jzstrata
+```
+maps length
+
+```{r}
+glstrata <- ggplot() +
+   geom_sf(data=sf3%>% 
+             drop_na(tapro) %>% 
+               filter(Year>1999,
+                      ID !="Outer"),
+           aes(fill = tapro), 
+           color=NA) +
+  scale_fill_viridis_b(option="C",
+                       name="cm.",
+                       breaks = seq(0,6,0.5),
+                       direction=-1)+
+  geom_sf(data = strata, fill=NA, col=2)+
+  geom_sf(data = coast2, colour="black", fill="grey")+
+  facet_wrap(~Year, ncol=6)+
+  theme(panel.background = element_rect(fill = 'aliceblue'),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())+
+  # ylim(-70, -60)+
+  # xlim(-70, -50)
+  # another kind projection
+  ylim(230000, 2220000)+
+  xlim(-3095349 , -1858911)+
+  #coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
+  coord_sf(crs = 6932)+
+  labs(title = "Mean Length Krill by Strata and Year")
+glstrata
 ```
 
 Load environmental data to merge with length.

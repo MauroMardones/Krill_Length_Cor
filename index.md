@@ -2,7 +2,7 @@
 title: "Krill Length 48.1 Correlation Analysis with Environmental Drivers"
 subtitle: "Alternative Analysis to incorporate in Krill Stock Assessment Model 48.1 SubArea"
 author: "Mauricio Mardones"
-date:  "14 March, 2023"
+date:  "15 March, 2023"
 bibliography: seaice.bib
 csl: apa.csl
 link-citations: yes
@@ -63,6 +63,7 @@ indicators on krill have been verified, this analysis aims to have a
 time series of the environmental variable to incorporate into the stock
 assessment process. Similar work in @Wang2021 but with a longest fishery
 history.
+
 
 
 ```r
@@ -719,6 +720,195 @@ gl
 
 <img src="index_files/figure-html/plogri-1.jpeg" style="display: block; margin: auto;" />
 
+### Length structure into STRATA
+
+Length composition by Strata CCAMLR to visualization first. First step is agrupo and kion data into to poligons strata.
+
+
+```r
+class(ohbio6)
+```
+
+```
+## [1] "sf"         "data.frame"
+```
+
+```r
+dim(ohbio6)
+```
+
+```
+## [1] 1266267       6
+```
+
+```r
+glimpse(ohbio6)
+```
+
+```
+## Rows: 1,266,267
+## Columns: 6
+## $ gear_type       <chr> "Otter Trawls, Midwater", "Otter Trawls, Midwater", "O…
+## $ maturity_stage  <int> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+## $ length_total_cm <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+## $ Year            <int> 1997, 1997, 1997, 1997, 1997, 1997, 1997, 1997, 1997, …
+## $ Month           <int> 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12…
+## $ geometry        <POINT [°]> POINT (-56.08 -60.78), POINT (-56.08 -60.8), POI…
+```
+
+```r
+class(strata)
+```
+
+```
+## [1] "sf"         "data.frame"
+```
+
+```r
+glimpse(strata)
+```
+
+```
+## Rows: 6
+## Columns: 7
+## $ ID         <chr> "EI", "SSIW", "BS", "JOIN", "Extra", "Outer"
+## $ AreaKm2    <dbl> 52252.3, 48098.3, 38027.8, 24393.2, 56975.0, NA
+## $ Labx       <dbl> -2650512, -2723133, -2566024, -2471920, -2551169, -2859412
+## $ Laby       <dbl> 1806616, 1565258, 1560551, 1740600, 1296175, 1300000
+## $ TotArea    <dbl> 52252, 48098, 38028, 24393, 56975, 449240
+## $ MarineArea <dbl> 51648, 47423, 35197, 23001, 43441, 439156
+## $ geometry   <MULTIPOLYGON [°]> MULTIPOLYGON (((-53.4425 -6..., MULTIPOLYGON (((-58 -61.898…
+```
+
+```r
+dim(strata)
+```
+
+```
+## [1] 6 7
+```
+
+```r
+ohbiopro <- ohbio6 %>%
+  dplyr::group_by(gear_type, Year, Month, geometry) %>% 
+  dplyr::summarize(tapro = mean(length_total_cm))
+
+# comoprobar si tengo datos duplicados
+strata2 <- st_make_valid(strata)
+ohbio62 <- st_make_valid(ohbio6)
+
+sf3 <- st_join(strata2, ohbiopro)
+sf4 <- st_join(strata2, ohbio6)
+dim(sf4)
+```
+
+```
+## [1] 1266267      12
+```
+
+```r
+names(sf3)
+```
+
+```
+##  [1] "ID"         "AreaKm2"    "Labx"       "Laby"       "TotArea"   
+##  [6] "MarineArea" "gear_type"  "Year"       "Month"      "tapro"     
+## [11] "geometry"
+```
+
+
+```r
+save("sf4", file = "sf4.RData")
+```
+
+scattter plot lenght data
+
+```r
+lentraplot <- ggplot(sf3 %>% 
+                   filter(Year>2000,
+                      ID !="Outer"), 
+               aes(Year, tapro,
+               fill=Month))+
+    geom_point(alpha=0.3, 
+               shape=21, 
+               show.legend = T) +
+    stat_smooth(method = "loess",
+                col="red")+
+    theme_bw()+ 
+    facet_wrap(.~ID)+
+    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
+    guides(fill = guide_legend(reverse=F))+
+    scale_fill_viridis_c(option="G")+
+    ylab("") +
+    xlab("") 
+lentraplot
+```
+
+<img src="index_files/figure-html/unnamed-chunk-14-1.jpeg" style="display: block; margin: auto;" />
+histogram length data
+
+
+
+```r
+jzstrata <- ggplot(sf4 %>% 
+               filter(Year>2000,
+                      ID !="Outer"),
+             aes(x=length_total_cm, 
+                 y = as.factor(Year), 
+                 fill=ID))+
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale = 1.9, 
+                      draw_baseline = FALSE,
+                      alpha=0.9)+
+  facet_wrap(.~ID, ncol=7) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 1, to = 10, 
+                                  by = 2))+
+  scale_y_discrete(breaks = seq(from = 2000, 
+                                to = 2020, by = 1))+
+  scale_fill_viridis_d(name="SubArea",
+                       option="F")+
+  theme_minimal()+
+  xlab("Longitud (cm.)")+
+  ylab("")
+jzstrata
+```
+
+<img src="index_files/figure-html/unnamed-chunk-15-1.jpeg" style="display: block; margin: auto;" />
+maps length
+
+
+```r
+glstrata <- ggplot() +
+   geom_sf(data=sf3%>% 
+             drop_na(tapro) %>% 
+               filter(Year>1999,
+                      ID !="Outer"),
+           aes(fill = tapro), 
+           color=NA) +
+  scale_fill_viridis_b(option="C",
+                       name="cm.",
+                       breaks = seq(0,6,0.5),
+                       direction=-1)+
+  geom_sf(data = strata, fill=NA, col=2)+
+  geom_sf(data = coast2, colour="black", fill="grey")+
+  facet_wrap(~Year, ncol=6)+
+  theme(panel.background = element_rect(fill = 'aliceblue'),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())+
+  # ylim(-70, -60)+
+  # xlim(-70, -50)
+  # another kind projection
+  ylim(230000, 2220000)+
+  xlim(-3095349 , -1858911)+
+  #coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
+  coord_sf(crs = 6932)+
+  labs(title = "Mean Length Krill by Strata and Year")
+glstrata
+```
+
+<img src="index_files/figure-html/unnamed-chunk-16-1.jpeg" style="display: block; margin: auto;" />
+
 Load environmental data to merge with length.
 
 
@@ -854,7 +1044,7 @@ tal<-ggplot(envlen, aes(x=lepro)) +
 tal
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-18-1.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-21-1.jpeg" style="display: block; margin: auto;" />
 
 ### Cambiar a factor `Year` y `cellid`
 
@@ -911,7 +1101,7 @@ boxchl <- ggplot(envlen)+
 ggarrange(boxsic, boxtsm, boxchl, nrow = 3)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-21-1.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-24-1.jpeg" style="display: block; margin: auto;" />
 
 is necessary get off outliers from Sea ice index. Get environmental
 outliers data and again...
@@ -951,7 +1141,7 @@ t<-ggplot(envlen2, aes(x=meanchl2)) +
 ggarrange(boxsic2, boxtsm2, boxchl2, p, q, t, nrow = 2, ncol=3)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-22-1.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-25-1.jpeg" style="display: block; margin: auto;" />
 
 ## Correlation Analysis
 
@@ -1133,7 +1323,7 @@ pairs.panels(envlen4,
              stars = TRUE)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-25-1.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-28-1.jpeg" style="display: block; margin: auto;" />
 
 
 ```r
@@ -1195,7 +1385,7 @@ plot(correlation(envlen4, partial = TRUE)) +
   scale_edge_color_continuous(low = "#000004FF", high = "#FCFDBFFF")
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-27-1.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-30-1.jpeg" style="display: block; margin: auto;" />
 
 Here we can identify the correlation that exists between krill length
 and chlorophyla (-) and krill length and SST (+)
@@ -1246,25 +1436,25 @@ test with @Ludecke2021
 check_model(env1)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-29-1.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-32-1.jpeg" style="display: block; margin: auto;" />
 
 ```r
 check_model(env2)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-29-2.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-32-2.jpeg" style="display: block; margin: auto;" />
 
 ```r
 check_model(env3)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-29-3.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-32-3.jpeg" style="display: block; margin: auto;" />
 
 ```r
 check_model(env4)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-29-4.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-32-4.jpeg" style="display: block; margin: auto;" />
 
 
 ```r
@@ -1277,7 +1467,7 @@ plot(compare_performance(env1,
      name="GLM Model to length krill data vs Env")
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-30-1.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-33-1.jpeg" style="display: block; margin: auto;" />
 
 Comparative table acrosss models.
 
@@ -1445,7 +1635,7 @@ pest <- plot_model(env1m,type = "est",
 ggarrange(pre, pest, ncol = 2)
 ```
 
-<img src="index_files/figure-html/unnamed-chunk-33-1.jpeg" style="display: block; margin: auto;" />
+<img src="index_files/figure-html/unnamed-chunk-36-1.jpeg" style="display: block; margin: auto;" />
 
 # Conclusion
 
