@@ -63,7 +63,6 @@ time series of the environmental variable to incorporate into the stock
 assessment process. Similar work in @Wang2021 but with a longest fishery
 history.
 
-
 ```{r message=FALSE}
 library(reshape2)
 library(tidyverse)
