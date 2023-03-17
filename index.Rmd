@@ -585,13 +585,14 @@ lentraplot <- ggplot(sf3 %>%
     geom_point(alpha=0.3, 
                shape=21, 
                show.legend = T) +
+    scale_fill_viridis_c(option="G")+
     stat_smooth(method = "loess",
                 col="red")+
     theme_bw()+ 
     facet_wrap(.~ID)+
     theme(axis.text.x = element_text(angle = 90, hjust = 2))+
     guides(fill = guide_legend(reverse=F))+
-    scale_fill_viridis_c(option="G")+
+    
     ylab("") +
     xlab("") 
 lentraplot
