@@ -377,7 +377,40 @@ pmea481 <- ggplot(coutlength %>%
     ylim(0, 6)
 pmea481
 ```
+## Calculate Index Recruit
 
+```{r}
+inderec <- ohbio4 %>% 
+  drop_na(length_total_cm) %>% 
+  dplyr::group_by(Year) %>% 
+  dplyr::mutate(prolen = length_total_cm - 4.16) %>% 
+  dplyr::mutate(prolen2 = prolen*1) %>% 
+  dplyr::summarize(prolen3 =mean(prolen2))
+
+
+```
+
+
+```{r}
+inderec$colour <- ifelse(inderec$prolen3 < 0, "negative","positive")
+
+indexplot <- ggplot(inderec,
+                    aes(rev(Year),prolen3))+
+  geom_bar(stat="identity",
+           position="identity",
+           aes(fill = colour))+
+  scale_fill_manual(values=c(negative="black",
+                             positive="firebrick1"),
+                    name="Recruit Index")+
+  scale_x_continuous(breaks = seq(from = 2000, 
+                                to = 2020, by = 1))+
+  theme_bw()+
+  labs(y="IRK",
+       x="",
+       title = "Index Size Krill 48.1 SubArea")+
+  coord_flip()
+indexplot
+```
 (Probar datos con RaadTools library [@Raadtools2022])
 
 ## Maps length data
@@ -557,13 +590,20 @@ class(strata)
 glimpse(strata)
 dim(strata)
 
+
+
 ohbiopro <- ohbio6 %>%
   dplyr::group_by(gear_type, Year, Month, geometry) %>% 
   dplyr::summarize(tapro = mean(length_total_cm))
 
+
+
+
 # comoprobar si tengo datos duplicados
 strata2 <- st_make_valid(strata)
 ohbio62 <- st_make_valid(ohbio6)
+
+
 
 sf3 <- st_join(strata2, ohbiopro)
 sf4 <- st_join(strata2, ohbio6)
@@ -586,6 +626,9 @@ lentraplot <- ggplot(sf3 %>%
                shape=21, 
                show.legend = T) +
     scale_fill_viridis_c(option="G")+
+    geom_hline(yintercept = 4.16,
+               color = "black",
+               linetype  = 2)+
     stat_smooth(method = "loess",
                 col="red")+
     theme_bw()+ 
@@ -656,6 +699,8 @@ glstrata <- ggplot() +
 glstrata
 ```
 
+
+
 Load environmental data to merge with length.
 
 ```{r echo=FALSE}
@@ -686,6 +731,15 @@ envgru <- dataenvf %>%
 dim(envgru)
 summary(envgru)
 
+# Test
+envgru2 <- dataenvf %>%
+  dplyr::select(1, 2, 3, 6, 9, 10) %>% 
+  drop_na(ANO.x) %>% 
+  dplyr::rename(Year=ANO.x) %>% 
+  dplyr::group_by(cellid,Year, geometry) %>% 
+  dplyr::summarise(meansic2=mean(meansic),
+                   meanchl2=mean(meanchl),
+                   meantsm2=mean(meantsm))
 ```
 
 Join merge object in a new data base.
@@ -1063,11 +1117,4 @@ ggarrange(pre, pest, ncol = 2)
 
 # References
 
-Sea ice data is from Giovanni NASA browser
-(<https://giovanni.gsfc.nasa.gov/>) ref: Global Modeling and
-Assimilation Office (GMAO) (2015),
 
-MERRA-2 tavgM_2d_flx_Nx: 2d,Monthly mean,Time-Averaged,Single-Level,
-Assimilation,Surface Flux Diagnostics V5.12.4, Greenbelt, MD, USA,
-Goddard Earth Sciences Data and Information Services Center (GES DISC),
-Accessed: [06 July 2022], 10.5067/0JRLVL8YV2Y4

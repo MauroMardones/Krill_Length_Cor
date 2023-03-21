@@ -1,0 +1,73 @@
+---
+title: "Index_Recruit"
+author: "Mauricio Mardones I."
+date: "2023-03-20"
+output: html_document
+---
+
+
+```{r setup1}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE,
+                      fig.align = 'center',
+                      dev = 'jpeg',
+                      dpi = 300)
+#XQuartz is a mess, put this in your onload to default to cairo instead
+options(bitmapType = "cairo") 
+# (https://github.com/tidyverse/ggplot2/issues/2655)
+# Lo mapas se hacen mas rapido
+```
+
+
+```{r}
+library(tidyverse)
+```
+
+Load data
+
+```{r}
+
+names(ohbio6)
+dim(ohbio6)
+```
+## Calculate Index Recruit
+
+```{r}
+inderec <- ohbio6 %>% 
+  drop_na(length_total_cm) %>% 
+  dplyr::group_by(Year) %>% 
+  dplyr::mutate(prolen = length_total_cm - 4.16) %>% 
+  dplyr::mutate(prolen2 = prolen*-1) %>% 
+  dplyr::summarize(prolen3 =mean(prolen2))
+
+
+sdlen <- sd(inderec$prolen3)
+names(inderec)
+summary(inderec)
+```
+
+
+```{r}
+inderec$colour <- ifelse(inderec$prolen3 < 0, "negative","positive")
+
+indexplot <- ggplot(inderec,
+                    aes(rev(Year),prolen3))+
+  geom_bar(stat="identity",
+           position="identity",
+           aes(fill = colour))+
+  scale_fill_manual(values=c(positive="firebrick1",
+                             negative="black"),
+                    name="")+
+  scale_x_continuous(breaks = seq(from = 2000, 
+                                to = 2020, by = 1))+
+  theme_bw()+
+  labs(y="IRK",
+       x="",
+       title = "Index Recruit Krill 48.1 SubArea")+
+  coord_flip()
+indexplot
+```
+
+
