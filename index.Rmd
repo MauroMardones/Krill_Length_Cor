@@ -922,6 +922,7 @@ kableExtra::kable(cov(envlen4)) %>%
   kable_styling()
 ```
 
+
 ```{r message=FALSE, warning=FALSE}
 pairs.panels(envlen4 %>% 
                dplyr::rename(Length=lepro,
