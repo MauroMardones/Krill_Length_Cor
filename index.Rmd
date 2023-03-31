@@ -1007,8 +1007,11 @@ compare_performance(env1,
                     env2,
                     env3,
                     env4,
-                    env5, 
+                    env5,
+                    env1m,
+                    env2m,
                     rank = TRUE, verbose = FALSE)
+
 ```
 
 
@@ -1025,6 +1028,8 @@ plot(compare_performance(env1,
                          env3,
                          env4,
                          env5,
+                         env1m,
+                         env2m,
                          rank = TRUE),
      name="GLM Model to length krill data vs Env")
 ```
@@ -1073,6 +1078,12 @@ random effects with `lme4` package [@Bates2015].
 
 ```{r}
 env1m <- lmer(lepro ~ Year + 
+             meanchl2 + 
+             meansic2 + 
+             meantsm2 + (1|meanchl2), 
+           data = envlen)
+
+env2m <- lmer(lepro ~ Year + 
              meanchl2 + 
              meansic2 + 
              meantsm2 + (1|cellid), 
