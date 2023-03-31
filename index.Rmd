@@ -799,8 +799,9 @@ boxsic <- ggplot(envname)+
   ylim(0,50)+
   theme_minimal()
 boxtsm <- ggplot(envname)+
-  geom_boxplot(aes(Year, SSM),
+  geom_boxplot(aes(Year, SSM-270),
                outlier.colour = "red")+
+  labs(y="TSM")+
   theme_minimal()
 boxchl <- ggplot(envname)+
   geom_boxplot(aes(Year, CHla),
@@ -922,7 +923,11 @@ kableExtra::kable(cov(envlen4)) %>%
 ```
 
 ```{r message=FALSE, warning=FALSE}
-pairs.panels(envlen4,
+pairs.panels(envlen4 %>% 
+               dplyr::rename(Length=lepro,
+         SIC=meansic2,
+         CHla=meanchl2,
+         SSM=meantsm2),
              smooth = TRUE,      
              scale = FALSE,      
              density = TRUE,     
@@ -938,7 +943,11 @@ pairs.panels(envlen4,
 ```
 
 ```{r message=FALSE, warning=FALSE}
-resu <- correlation(envlen4)
+resu <- correlation(envlen4 %>%
+               dplyr::rename(Length=lepro,
+         SIC=meansic2,
+         CHla=meanchl2,
+         SSM=meantsm2))
 resu
 summary(resu, redundant=TRUE)
 ```
@@ -993,7 +1002,17 @@ env5 <- glm(lepro ~ Year +
 
 test with @Ludecke2021
 
-```{r}
+```{r warning=F}
+compare_performance(env1, 
+                    env2,
+                    env3,
+                    env4,
+                    env5, 
+                    rank = TRUE, verbose = FALSE)
+```
+
+
+```{r warning=F}
 check_model(env1)
 check_model(env2)
 check_model(env3)
