@@ -1081,13 +1081,13 @@ random effects with `lme4` package [@Bates2015].
 env1m <- lmer(lepro ~ Year + 
              meanchl2 + 
              meansic2 + 
-             meantsm2 + (1|meanchl2), 
+             meantsm2 + (1|cellid), 
            data = envlen)
 
 env2m <- lmer(lepro ~ Year + 
              meanchl2 + 
              meansic2 + 
-             meantsm2 + (1|cellid), 
+             meantsm2 + (1|meanchl2), 
            data = envlen)
 ```
 
