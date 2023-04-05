@@ -979,7 +979,7 @@ names(envlen2)
 # [1] "cellid"   "Year"     "lepro"    "meansic2" "meanchl2"
 # [6] "meantsm2" "geometry"
 env1 <- glm(lepro ~ Year,
-            data = envlen2)
+            data = envlen2, family = )
 env2 <- glm(lepro ~ Year + 
               meansic2,
             data = envlen2)
@@ -1003,6 +1003,18 @@ env5 <- glm(lepro ~ Year +
 
 test with @Ludecke2021
 
+Table with significance level (***).
+```{r}
+#summary(env4)
+tab_model(env1, 
+          env2,
+          env3, 
+          env4, p.style = "stars")
+
+```
+
+
+Table comparing performance model. 
 ```{r warning=F}
 compare_performance(env1, 
                     env2,
@@ -1010,17 +1022,21 @@ compare_performance(env1,
                     env4,
                     env5,
                     env1m,
-                    env2m,
                     rank = TRUE, verbose = FALSE)
-
 ```
 
+Regarding this result, we can select **best model** and check some assumtion like:
 
-```{r warning=F}
+- Colinealidad
+- Data points influyentes
+- Homoscedasticidad
+- Normalidad de los residuos 
+- Independencia
+
+In this case, is `env4`
+
+```{r fig.height=3, fig.width=3,  warning=F}
 check_model(env1)
-check_model(env2)
-check_model(env3)
-check_model(env4)
 ```
 
 ```{r}
@@ -1028,24 +1044,20 @@ plot(compare_performance(env1,
                          env2, 
                          env3,
                          env4,
-                         env5,
-                         env1m,
-                         env2m,
                          rank = TRUE),
-     name="GLM Model to length krill data vs Env")
+     name="LM to length krill data vs Env")
 ```
 
 Comparative table acrosss models.
 
 ```{r}
-comp <- compare_performance(env1, 
-                         env2, 
-                         env3,
-                         env4,
+compare_performance(env1, 
+                    env2, 
+                    env3,
+                    env4, 
                     env5)
 
-kableExtra::kable(comp) %>% 
-  kable_styling()
+
 ```
 
 ## GLMM models
@@ -1091,6 +1103,7 @@ env2m <- lmer(lepro ~ Year +
            data = envlen)
 ```
 
+
 ```{r warning=FALSE, message=FALSE}
 # graficar efectos aleatorios
 pre <- plot_model(env1m,type = "re", 
@@ -1117,6 +1130,11 @@ pest <- plot_model(env1m,type = "est",
   theme_minimal()
 
 ggarrange(pre, pest, ncol = 2)
+```
+```{r}
+env_ranef <- ranef(env1m)
+summary(env_ranef)
+mean(env_ranef$cellid[, 1])
 ```
 
 # Conclusion
