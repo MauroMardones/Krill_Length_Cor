@@ -1,7 +1,7 @@
 ---
 title: "Krill Length 48.1 Correlation Analysis with Environmental Drivers"
 subtitle: "Alternative Analysis to incorporate in Krill Stock Assessment Model 48.1 SubArea"
-author: "Mauricio Mardones"
+author: "Mardones, M; Watters, G.; Cárdenas, C."
 date:  "`r format(Sys.time(), '%d %B, %Y')`"
 bibliography: seaice.bib
 csl: apa.csl
@@ -1058,6 +1058,22 @@ compare_performance(env1,
                     env5)
 
 
+```
+```{r}
+AIC(env1)
+AIC(env2)
+AIC(env3)
+AIC(env4)
+deviance(env1)
+deviance(env2)
+deviance(env3)
+deviance(env4)
+
+library(lmtest)
+lrtest0<-lrtest(env1,env2,env3,env4)
+lrtest0
+plot_model(env4)+
+  theme_bw()
 ```
 
 ## GLMM models
