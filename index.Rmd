@@ -129,7 +129,7 @@ dim(ohbio)
 ```
 
 Join data set with master as `c1` set. This join is trought
-`obs_haul_id` variable
+`obs_haul_id` variable to get geoposition variables
 
 ```{r warning=FALSE}
 ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")
@@ -162,6 +162,29 @@ coutlength <-ohbio4 %>%
 #kableExtra::kable(coutlength, format = "html")
 ```
 
+Mean length in time series by Subarea.
+
+```{r, fig.align="center"}
+pmea <- ggplot(coutlength %>% 
+                 filter(Year>2000), 
+               aes(Year,avg))+
+    geom_point(shape=21, fill=coutlength$asd_code, 
+               show.legend = T) +
+    stat_smooth(method= "glm", colour='#253494')+
+    scale_size(range = c(-4,8)) +
+    theme_bw()+ 
+    facet_wrap(.~asd_code)+
+    scale_x_continuous(breaks = seq(from = 2000, to = 2020, by = 2))+
+    #scale_y_discrete(breaks = seq(from = 1, to = 13, by = 1))+
+    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
+    guides(fill = guide_legend(reverse=F))+
+    scale_fill_viridis_c(option="E")+
+    ylim(3,6)+
+    ylab("") +
+    xlab("") +
+    ggtitle("Lenght Mean Krill fishery")
+pmea
+```
 Some features of data set length structures
 
 ```{r}
@@ -210,7 +233,7 @@ jz
 Another way to watch this data is regarding thecniches trawl like Figure
 \@ref(fig:lenthtrwal).
 
-```{r lenthtrwal, message=F, warning=F}
+```{r lenthtrwal, message=F, warning=F, fig.cap="Krill length by Trawl technique"}
 
 trwal <- ggplot(ohbio4 %>% 
                filter(Year>2000),
@@ -240,9 +263,9 @@ trwal
 ```
 
 Same plot by Sub Area and month trought year. With this kind of plot, we
-can see the recruit power interannually (Figure \@ref(fig:lengthmonth).
+can see the recruit power interannually (Figure\@ref(fig:lengthmonth).
 
-```{r lengthmonth, message=F, warning=F}
+```{r lengthmonth, message=F, warning=F, fig.cap="Length by Month and  SubArea"}
 ymasd <- ggplot(ohbio4 %>% 
                filter(Year>2000),
              aes(x=length_total_cm, 
@@ -333,29 +356,7 @@ ggarrange(box, hi, ncol = 2)
   
 ```
 
-Mean length in time series by Subarea.
 
-```{r, fig.align="center"}
-pmea <- ggplot(coutlength %>% 
-                 filter(Year>2000), 
-               aes(Year,avg))+
-    geom_point(shape=21, fill=coutlength$asd_code, 
-               show.legend = T) +
-    stat_smooth(method= "glm", colour='#253494')+
-    scale_size(range = c(-4,8)) +
-    theme_bw()+ 
-    facet_wrap(.~asd_code)+
-    scale_x_continuous(breaks = seq(from = 2000, to = 2020, by = 2))+
-    #scale_y_discrete(breaks = seq(from = 1, to = 13, by = 1))+
-    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
-    guides(fill = guide_legend(reverse=F))+
-    scale_fill_viridis_c(option="E")+
-    ylim(3,6)+
-    ylab("") +
-    xlab("") +
-    ggtitle("Lenght Mean Krill fishery")
-pmea
-```
 
 
 ## Calculate Index Recruit
@@ -436,9 +437,9 @@ strata <- st_read("~/DOCAS/Mapas/Antarctic_SHPfiles/Strata.shp",
 strata=st_transform(strata, "+proj=latlong +ellps=WGS84")
 ```
 
-Test diferentes mapas
+Show strata agregation to join length data (Figure\@ref(fig:maptest).
 
-```{r maptest}
+```{r maptest, fig.cap="Strata Maps in 48.1"}
 # y testeo el mapa
 ssmap <- ggplot()+
   geom_sf(data = strata, aes(fill=strata$ID, 
@@ -463,9 +464,9 @@ ssmap <- ggplot()+
 ssmap
 ```
 
-Test Strata SSMU
+Test Strata SSMU, just to know another way to join data, but this kind of spatial structuration is deprecated to mamagemente use (Figure\@ref(fig:maptest2).
 
-```{r maptest2}
+```{r maptest2, fig.cap="SSMU Map in 48.1 SubArea}
 # y testeo el mapa
 ssmumap <- ggplot()+
   # geom_sf(data = strata, aes(fill=strata$ID, 
@@ -568,7 +569,7 @@ gl
 
 ### Length structure into STRATA
 
-Length composition by Strata CCAMLR to visualization first. First step is agrupo and kion data into to poligons strata.
+Length composition by Strata CCAMLR to visualization first. First step is group data into to poligons strata.
 
 ```{r wranlingdata}
 class(ohbio6)
@@ -637,7 +638,7 @@ jzstrata <- ggplot(sf4 %>%
              aes(x=length_total_cm, 
                  y = as.factor(Year), 
                  fill=ID))+
-  geom_density_ridges(stat = "binline", bins = 50, 
+  geom_density_ridges(stat = "binline", bins = 30, 
                       scale = 1.9, 
                       draw_baseline = FALSE,
                       alpha=0.9)+
@@ -685,9 +686,96 @@ glstrata <- ggplot() +
 glstrata
 ```
 
+Prepare template length data by strata for posterior analysis like "Intrinsic Productivity". We can found this in this [link](https://github.com/MauroMardones/LBSPR_Krill)
 
+#### Grouping by strata
+
+```{r eval=FALSE, echo=TRUE}
+# Maybe this could be a loop , but i didnt find the way...
+# Elephan Island
+ei <- sf4 %>% 
+  drop_na(length_total_cm) %>% 
+  filter(ID== "EI")  
+# cut in order
+ei$catlon <- cut(x = ei$length_total_cm, 
+                 breaks = seq(0,7,0.2),
+                 labels = seq(0,6.8,0.2),
+                 right = FALSE)
+
+eit <- table(ei$Year, ei$catlon)
+eit1 <-t(as.data.frame.matrix(eit)); class(eit1)
+
+
+# SSIW
+ssiw <- sf4 %>% 
+  drop_na(length_total_cm) %>% 
+  filter(ID== "SSIW")  
+# cut in order
+ssiw$catlon <- cut(x = ssiw$length_total_cm, 
+                 breaks = seq(0,7,0.2),
+                 labels = seq(0,6.8,0.2),
+                 right = FALSE)
+
+ssiwt <- table(ssiw$Year, ssiw$catlon)
+ssiwt1 <-t(as.data.frame.matrix(ssiwt)); class(ssiwt1)
+
+# BS
+bs <- sf4 %>% 
+  drop_na(length_total_cm) %>% 
+  filter(ID== "BS")  
+# cut in order
+bs$catlon <- cut(x = bs$length_total_cm, 
+                 breaks = seq(0,7,0.2),
+                 labels = seq(0,6.8,0.2),
+                 right = FALSE)
+
+bst <- table(bs$Year, bs$catlon)
+bst1 <-t(as.data.frame.matrix(bst)); class(bst1)
+
+# JOIN  (very poor data, just a couple years)
+join <- sf4 %>% 
+  drop_na(length_total_cm) %>% 
+  filter(ID== "JOIN")  
+# cut in order
+join$catlon <- cut(x = join$length_total_cm, 
+                 breaks = seq(0,7,0.2),
+                 labels = seq(0,6.8,0.2),
+                 right = FALSE)
+
+joint <- table(join$Year, join$catlon)
+joint1 <-t(as.data.frame.matrix(joint)); class(joint1)
+
+# Extra
+extra <- sf4 %>% 
+  drop_na(length_total_cm) %>% 
+  filter(ID== "Extra")  
+# cut in order
+extra$catlon <- cut(x = extra$length_total_cm, 
+                 breaks = seq(0,7,0.2),
+                 labels = seq(0,6.8,0.2),
+                 right = FALSE)
+
+extrat <- table(extra$Year, extra$catlon)
+extrat1 <-t(as.data.frame.matrix(extrat)); class(extrat1)
+```
+
+Generate the files to use in intrinsic productivity analysis.
+
+```{r eval=FALSE, echo=TRUE, warning=FALSE}
+# A su vez puedo generar el archivo por separado
+write.csv(eit1, "lenghtEI.csv", sep = ",", row.names = TRUE)
+write.csv(ssiwt1, "lenghtSSIW.csv", sep = ",", row.names = TRUE)
+write.csv(bst1, "lenghtBS.csv", sep = ",", row.names = TRUE)
+write.csv(joint1, "lenghtJOIN.csv", sep = ",", row.names = TRUE)
+write.csv(extrat1, "lenghtExtra.csv", sep = ",", row.names = TRUE)
+
+```
+
+
+## Environmental data
 
 Load environmental data to merge with length.
+
 
 ```{r echo=FALSE}
 datae <- load("~/DOCAS/Data/KrillLows/DataEnvKrill.RData")
