@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # Rdata
 sf4.Rdata
+
+# Figures .jpeg
+*.jpeg

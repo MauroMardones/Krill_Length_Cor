@@ -466,7 +466,7 @@ ssmap
 
 Test Strata SSMU, just to know another way to join data, but this kind of spatial structuration is deprecated to mamagemente use (Figure\@ref(fig:maptest2).
 
-```{r maptest2, fig.cap="SSMU Map in 48.1 SubArea}
+```{r maptest2, fig.cap="SSMU Map in 48.1 SubArea"}
 # y testeo el mapa
 ssmumap <- ggplot()+
   # geom_sf(data = strata, aes(fill=strata$ID, 
@@ -1067,7 +1067,7 @@ names(envlen2)
 # [1] "cellid"   "Year"     "lepro"    "meansic2" "meanchl2"
 # [6] "meantsm2" "geometry"
 env1 <- glm(lepro ~ Year,
-            data = envlen2, family = )
+            data = envlen2)
 env2 <- glm(lepro ~ Year + 
               meansic2,
             data = envlen2)
@@ -1235,6 +1235,7 @@ pest <- plot_model(env1m,type = "est",
 
 ggarrange(pre, pest, ncol = 2)
 ```
+
 ```{r}
 env_ranef <- ranef(env1m)
 summary(env_ranef)
