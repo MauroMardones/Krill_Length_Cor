@@ -147,11 +147,22 @@ ohbio3 <- ohbio2 %>%
          Day = day(date_catchperiod_start))
 ```
 
+Save data further analysis
+```{r}
+length481 <-ohbio3 %>% 
+  dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47, 43) %>% 
+  filter(asd_code=="481")
+head(length481)  
+save(length481, file = "length481.RData")
+```
+
 ```{r}
 names(ohbio3)
 ohbio4 <- ohbio3 %>% 
 dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47)
 names(ohbio4)
+
+
 ```
 
 ```{r warning=FALSE, message=FALSE}
