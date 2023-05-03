@@ -613,6 +613,7 @@ dim(sf3)
 save("sf4", file = "sf4.RData")
 ```
 
+
 scattter plot lenght data
 ```{r warning=F}
 lentraplot <- ggplot(sf3 %>% 
