@@ -162,7 +162,6 @@ ohbio4 <- ohbio3 %>%
 dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47)
 names(ohbio4)
 
-
 ```
 
 ```{r warning=FALSE, message=FALSE}
@@ -577,6 +576,7 @@ gl <- ggplot() +
   coord_sf(crs = 6932)
 gl
 ```
+
 
 ### Length structure into STRATA
 
