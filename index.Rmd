@@ -554,6 +554,7 @@ grilen3 <- grilen %>%
 
  
 
+
 gl <- ggplot() +
    geom_sf(data=grilen3,
            aes(fill = lepro), 
