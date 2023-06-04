@@ -553,6 +553,7 @@ grilen3 <- grilen %>%
   dplyr::summarise(lepro=mean(length_total_cm))
 
  
+
 gl <- ggplot() +
    geom_sf(data=grilen3,
            aes(fill = lepro), 
