@@ -26,6 +26,7 @@ editor_options:
     wrap: 72
 ---
 
+
 ```{r setup1}
 rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE,
@@ -63,33 +64,7 @@ time series of the environmental variable to incorporate into the stock
 assessment process. Similar work in @Wang2021 but with a longest fishery
 history.
 
-```{r message=FALSE}
-library(reshape2)
-library(tidyverse)
-library(plyr)
-library(lubridate)
-library(raster)
-library(sf)
-library(CCAMLRGIS)
-library(here)
-library(easystats)
-library(see) # for plotting
-library(ggraph) # needs to be loaded# analisis estadisticos post
-library(ggridges)
-library(ggpubr)
-library(knitr)
-library(kableExtra)
-# stat test
-library(corrplot)
-library(outliers)
-library(visreg)
-# correlation test 
-library(PerformanceAnalytics)
-library(psych)
-library(lme4)
-library(sjPlot)
 
-```
 
 # Methodology
 
@@ -153,7 +128,7 @@ Save data further analysis
 length481 <-ohbio3 %>% 
   dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47, 43) %>% 
   filter(asd_code=="481")
-head(length481)  
+summary(length481)  
 save(length481, file = "length481.RData")
 ```
 
@@ -215,7 +190,7 @@ to all 48 subarea length composition from monitoring fisheries.
 
 ```{r message=F, warning=F}
 jz <- ggplot(ohbio4 %>% 
-               filter(Year>2000),
+               dplyr::filter(Year>2000),
              aes(x=length_total_cm, 
                  y = as.factor(Year), 
                  fill=asd_code))+
@@ -241,7 +216,7 @@ jz <- ggplot(ohbio4 %>%
 jz
 ```
 
-Another way to watch this data is regarding thecniches trawl like Figure
+Another way to watch this data is regarding thecnics trawl like Figure
 \@ref(fig:lenthtrwal).
 
 ```{r lenthtrwal, message=F, warning=F, fig.cap="Krill length by Trawl technique"}
@@ -334,6 +309,30 @@ yma481 <- ggplot(ohbio4 %>%
   ylab("")
 yma481
 ```
+
+
+Violin plot
+
+```{r}
+
+vio481 <- ggplot(ohbio4 %>% 
+               filter(Year>2000),
+             aes(x=as.factor(Year), 
+                 y = length_total_cm))+
+  geom_violin(alpha=0.5)+
+  geom_boxplot(width=0.1,
+               outlier.shape = NA)+
+  facet_wrap(~asd_code, ncol = 1)+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  xlab("")+
+  ylab("Length (cm.)")
+vio481
+
+```
+
+
 
 ## Mean Length
 
@@ -579,9 +578,7 @@ gl <- ggplot() +
   coord_sf(crs = 6932)
 gl
 ```
-
-
-### Length structure into STRATA
+###  STRATA
 
 Length composition by Strata CCAMLR to visualization first. First step is group data into to poligons strata.
 
@@ -617,6 +614,7 @@ dim(sf3)
 
 ```{r saveda, eval=FALSE}
 save("sf4", file = "sf4.RData")
+load("~/DOCAS/Data/Krill_Length_Cor/sf4.RData")
 ```
 
 
@@ -673,6 +671,34 @@ jzstrata <- ggplot(sf4 %>%
   ylab("")
 jzstrata
 ```
+
+Violin plot by strata
+
+```{r}
+
+viostra <- ggplot(sf4 %>% 
+               filter(Year>2000,
+                      ID !="Outer"),
+             aes(x=length_total_cm, 
+                 y = as.factor(Year), 
+                 fill=ID))+
+  scale_fill_viridis_d(name="Strata",
+                       option="F")+
+  geom_violin(alpha=0.8)+
+  geom_boxplot(width=0.1,
+               outlier.shape = NA,
+               show.legend = FALSE)+
+  geom_vline(xintercept = 3.6, color = "red")+
+  facet_wrap(.~ID, ncol=7) + 
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  ylab("")+
+  xlab("Length (cm.)")
+viostra
+
+```
+
 maps length
 
 ```{r}
