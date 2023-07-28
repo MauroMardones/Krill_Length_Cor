@@ -445,6 +445,11 @@ dmp1=st_transform(dmp1, 6932)
 strata <- st_read("~/DOCAS/Mapas/Antarctic_SHPfiles/Strata.shp",
                 quiet=T)
 strata=st_transform(strata, "+proj=latlong +ellps=WGS84")
+
+# Uso las agrupaciones de Strata Lucas HW
+strataclip <- st_read("~/DOCAS/Data/WAP-Heatwaves/peninsula_correct.shp",
+                quiet=T)
+strataclip=st_transform(strata, "+proj=latlong +ellps=WGS84")
 ```
 
 Show strata agregation to join length data (Figure\@ref(fig:maptest).

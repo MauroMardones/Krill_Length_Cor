@@ -39,7 +39,7 @@ inderec <- sf4 %>%
   drop_na(length_total_cm) %>% 
   dplyr::group_by(Year, ID) %>% 
   dplyr::mutate(prolen = length_total_cm - 4.1) %>% 
-  dplyr::mutate(prolen2 = prolen) %>% 
+  dplyr::mutate(prolen2 = prolen*-1 ) %>% 
   dplyr::summarize(prolen3 =mean(prolen2))
 
 
@@ -57,7 +57,7 @@ indexplot <- ggplot(inderec,
                     aes(rev(Year),prolen3))+
   geom_bar(stat="identity",
            position="identity",
-           aes(fill = colour))+
+           aes(fill = colour), alpha=0.7)+
   scale_fill_manual(values=c(positive="firebrick1",
                              negative="black"),
                     name="")+
@@ -68,7 +68,7 @@ indexplot <- ggplot(inderec,
   theme(axis.text.x = element_text(angle = 90, hjust = 2))+
   labs(y="IRK",
        x="",
-       title = "Index Recruit Krill 48.1 SubArea")
+       title = "Index Recruit Krill 48.1")
 indexplot
 ```
 
