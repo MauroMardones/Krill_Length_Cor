@@ -35,17 +35,18 @@ dim(ohbio6)
 ## Calculate Index Recruit
 
 ```{r}
-inderec <- ohbio6 %>% 
+inderec <- sf4 %>% 
   drop_na(length_total_cm) %>% 
-  dplyr::group_by(Year) %>% 
-  dplyr::mutate(prolen = length_total_cm - 4.16) %>% 
-  dplyr::mutate(prolen2 = prolen*-1) %>% 
+  dplyr::group_by(Year, ID) %>% 
+  dplyr::mutate(prolen = length_total_cm - 4.1) %>% 
+  dplyr::mutate(prolen2 = prolen) %>% 
   dplyr::summarize(prolen3 =mean(prolen2))
 
 
-sdlen <- sd(inderec$prolen3)
-names(inderec)
-summary(inderec)
+limite_superior <- round(mean(inderec$prolen3) + 
+  1.96 * sd(inderec$prolen3) / sqrt(inderec$prolen3),3)
+limite_inferior <- round(mean(inderec$prolen3) - 
+  1.96 * sd(inderec$prolen3) / sqrt(inderec$prolen3),3)
 ```
 
 
@@ -60,13 +61,14 @@ indexplot <- ggplot(inderec,
   scale_fill_manual(values=c(positive="firebrick1",
                              negative="black"),
                     name="")+
+  facet_wrap(.~ID)+
+  theme_few()+
   scale_x_continuous(breaks = seq(from = 2000, 
-                                to = 2020, by = 1))+
-  theme_bw()+
+                                to = 2020, by = 4))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 2))+
   labs(y="IRK",
        x="",
-       title = "Index Recruit Krill 48.1 SubArea")+
-  coord_flip()
+       title = "Index Recruit Krill 48.1 SubArea")
 indexplot
 ```
 

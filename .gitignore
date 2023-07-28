@@ -39,7 +39,8 @@ vignettes/*.pdf
 .Renviron
 
 # Rdata
-sf4.Rdata
+sf4.RData
+sf3.RData
 length481.Rdata
 
 # Figures .jpeg

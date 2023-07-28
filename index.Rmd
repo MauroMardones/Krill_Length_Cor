@@ -614,6 +614,7 @@ dim(sf3)
 
 ```{r saveda, eval=FALSE}
 save("sf4", file = "sf4.RData")
+save("sf3", file = "sf3.RData")
 load("~/DOCAS/Data/Krill_Length_Cor/sf4.RData")
 ```
 
@@ -1191,6 +1192,8 @@ compare_performance(env1,
 
 
 ```
+
+
 ```{r}
 AIC(env1)
 AIC(env2)
