@@ -41,6 +41,38 @@ options(bitmapType = "cairo")
 # Lo mapas se hacen mas rapido
 ```
 
+
+
+```{r lib, message=F, echo= TRUE}
+library(here)
+#analisis
+library(ggsignif)
+library(ggrepel)
+library(ggpubr)
+library(inlmisc)
+library(nortest) #para testear distribucion
+library(skimr) #provides a frictionless approach to summary statistics 
+library(lubridate)
+library(easystats) # multiples unciones analiticas
+library(lme4)
+library(skimr)
+library(readxl)
+library(fitdistrplus)
+# vizualizacion
+library(ggridges)
+library(sf)
+library(GGally)
+library(tidyverse, quietly = TRUE)
+library(knitr, quietly = TRUE)
+library(kableExtra)
+library(raster)
+library(egg)
+library(car) #Variance inflation Factor
+library(ggthemes)
+library(sjPlot)
+library(GGally)
+```
+
 # Background
 
 The following document intends to carry out a complementary
@@ -129,7 +161,7 @@ length481 <-ohbio3 %>%
   dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47, 43) %>% 
   filter(asd_code=="481")
 summary(length481)  
-save(length481, file = "length481.RData")
+#save(length481, file = "length481.RData")
 ```
 
 ```{r}
@@ -150,19 +182,17 @@ coutlength <-ohbio4 %>%
 
 Mean length in time series by Subarea.
 
-```{r, fig.align="center"}
-pmea <- ggplot(coutlength %>% 
-                 filter(Year>2000), 
-               aes(Year,avg))+
-    geom_point(shape=21, fill=coutlength$asd_code, 
-               show.legend = T) +
+```{r, fig.align="center", warning=FALSE}
+pmea <- ggplot(coutlength, 
+               aes(Month,avg))+
+    geom_point(show.legend = T) +
     stat_smooth(method= "glm", colour='#253494')+
     scale_size(range = c(-4,8)) +
-    theme_bw()+ 
-    facet_wrap(.~asd_code)+
-    scale_x_continuous(breaks = seq(from = 2000, to = 2020, by = 2))+
+    theme_few()+ 
+    facet_grid(asd_code~Year)+
+    scale_x_continuous(breaks = seq(from = 1, to = 12, by = 3))+
     #scale_y_discrete(breaks = seq(from = 1, to = 13, by = 1))+
-    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
+    theme(axis.text.x = element_text(angle = 90))+
     guides(fill = guide_legend(reverse=F))+
     scale_fill_viridis_c(option="E")+
     ylim(3,6)+
@@ -198,7 +228,7 @@ jz <- ggplot(ohbio4 %>%
   geom_density_ridges(stat = "binline", bins = 50, 
                       scale = 1.8, 
                       draw_baseline = FALSE,
-                      alpha=0.9)+
+                      alpha=0.8)+
   facet_wrap(.~asd_code, ncol=3) +   
   geom_vline(xintercept = 3.6, color = "red")+
   scale_x_continuous(breaks = seq(from = 1, to = 10, 
@@ -374,7 +404,7 @@ ggarrange(box, hi, ncol = 2)
 ```{r}
 inderec <- ohbio4 %>% 
   drop_na(length_total_cm) %>% 
-  dplyr::group_by(Year) %>% 
+  dplyr::group_by(Year, asd_code) %>% 
   dplyr::mutate(prolen = length_total_cm - 4.16) %>% 
   dplyr::mutate(prolen2 = prolen*1) %>% 
   dplyr::summarize(prolen3 =mean(prolen2))
@@ -403,7 +433,10 @@ indexplot <- ggplot(inderec,
                     name="")+
   scale_x_continuous(breaks = seq(from = 2000, 
                                 to = 2020, by = 1))+
-  theme_bw()+
+  facet_wrap(.~asd_code)+
+  geom_hline(yintercept=0,
+             lwd=0.4)+
+  theme_few()+
   labs(y="IRK",
        x="",
        title = "Index Recruit Krill 48.1 SubArea")+
@@ -828,7 +861,7 @@ Load environmental data to merge with length.
 
 
 ```{r echo=FALSE}
-datae <- load("~/DOCAS/Data/KrillLows/DataEnvKrill.RData")
+load("~/DOCAS/Data/KrillLows/DataEnvKrill.RData")
 ```
 
 Get data specific object
