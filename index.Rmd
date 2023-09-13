@@ -1251,6 +1251,7 @@ plot_model(env4)+
 
 ## GLMM models
 
+
 Random effects are a way to model variability in data that comes from
 factors that cannot be directly measured or controlled. In the context
 of statistical models, random effects refer to variables that are

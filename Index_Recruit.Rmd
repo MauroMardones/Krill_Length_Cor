@@ -57,7 +57,7 @@ indexplot <- ggplot(inderec,
                     aes(rev(Year),prolen3))+
   geom_bar(stat="identity",
            position="identity",
-           aes(fill = colour), alpha=0.7)+
+           aes(fill = colour))+
   scale_fill_manual(values=c(positive="firebrick1",
                              negative="black"),
                     name="")+
