@@ -29,6 +29,7 @@ Load data
 
 ```{r}
 
+
 names(ohbio6)
 dim(ohbio6)
 ```
@@ -51,7 +52,6 @@ limite_inferior <- round(mean(inderec$prolen3) -
 
 
 ```{r}
-
 inderec$colour <- ifelse(inderec$prolen3 < 0, "negative","positive")
 
 indexplot <- ggplot(inderec,

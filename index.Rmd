@@ -353,7 +353,7 @@ vio481 <- ggplot(ohbio4 %>%
   geom_boxplot(width=0.1,
                outlier.shape = NA)+
   facet_wrap(~asd_code, ncol = 1)+
-  theme_minimal()+
+  theme_few()+
   theme(axis.text.x = element_text(angle = 90, 
                                    hjust = 1))+
   xlab("")+
@@ -703,10 +703,10 @@ jzstrata <- ggplot(sf4 %>%
                                   by = 2))+
   scale_y_discrete(breaks = seq(from = 2000, 
                                 to = 2020, by = 1))+
-  scale_fill_viridis_d(name="SubArea",
+  scale_fill_viridis_d(name="Strata",
                        option="F")+
   theme_minimal()+
-  xlab("Longitud (cm.)")+
+  xlab("Length (cm.)")+
   ylab("")
 jzstrata
 ```
@@ -1250,9 +1250,6 @@ plot_model(env4)+
 ```
 
 ## GLMM models
-
-
-
 
 Random effects are a way to model variability in data that comes from
 factors that cannot be directly measured or controlled. In the context
