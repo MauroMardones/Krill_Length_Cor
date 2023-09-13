@@ -51,6 +51,7 @@ limite_inferior <- round(mean(inderec$prolen3) -
 
 
 ```{r}
+
 inderec$colour <- ifelse(inderec$prolen3 < 0, "negative","positive")
 
 indexplot <- ggplot(inderec,
