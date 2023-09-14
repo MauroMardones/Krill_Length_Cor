@@ -659,7 +659,7 @@ load("~/DOCAS/Data/Krill_Length_Cor/sf4.RData")
 
 scattter plot lenght data
 ```{r warning=F}
-lentraplot <- ggplot(sf3 %>% 
+lentraplot <- ggplot(sf4 %>% 
                    filter(Year>2000,
                       ID !="Outer"), 
                aes(Year, tapro,
@@ -871,8 +871,7 @@ ls()
 get("dataenvf")
 ```
 
-Join length and environental data by `cellid` and `Year` with a reduce
-DB.
+Join length and environental data by `cellid` and `Year` with a reduce DB.
 
 ```{r}
 class(dataenvf)
@@ -1133,11 +1132,6 @@ resu %>%
   plot()
 ```
 
-```{r message=FALSE, warning=FALSE}
-plot(correlation(envlen4, partial = TRUE)) +
-  scale_edge_color_continuous(low = "#000004FF", high = "#FCFDBFFF")
-```
-
 Here we can identify the correlation that exists between krill length
 and chlorophyla (-) and krill length and SST (+)
 
@@ -1149,27 +1143,33 @@ Come back with `envlen2` object.
 names(envlen2)
 # [1] "cellid"   "Year"     "lepro"    "meansic2" "meanchl2"
 # [6] "meantsm2" "geometry"
+envlen2r <- envlen2 %>% 
+  rename(SIC = meansic2,
+         Chl = meanchl2,
+         SST = meantsm2,
+         Length = lepro)
+
 env1 <- glm(lepro ~ Year,
-            data = envlen2)
+            data = envlen2r)
 env2 <- glm(lepro ~ Year + 
-              meansic2,
-            data = envlen2)
+              SIC,
+            data = envlen2r)
 env3 <- glm(lepro ~ Year + 
-              meansic2 +
-              meanchl2 ,
-            data = envlen2)
+              SIC +
+             Chl ,
+            data = envlen2r)
 env4 <- glm(lepro ~ Year + 
-              meansic2 +
-              meanchl2 + 
-              meantsm2 ,
-            data = envlen2)
+              SIC +
+              Chl + 
+              SST ,
+            data = envlen2r)
 #spatial component
 env5 <- glm(lepro ~ Year + 
-              meansic2 +
-              meanchl2 + 
-              meantsm2 +
+              SIC +
+              Chl +
+              SST +
               cellid,
-            data = envlen2)
+            data = envlen2r)
 ```
 
 test with @Ludecke2021
@@ -1279,21 +1279,21 @@ In this cae we try test spatial componenten in `cellid` variable like
 random effects with `lme4` package [@Bates2015].
 
 ```{r}
-env1m <- lmer(lepro ~ Year + 
-             meanchl2 + 
-             meansic2 + 
-             meantsm2 + (1|cellid), 
-           data = envlen)
+env1m <- lmer(Length ~ Year + 
+            Chl + 
+             SIC + 
+             SST + (1|cellid), 
+           data = envlen2r)
 
-env2m <- lmer(lepro ~ Year + 
-             meanchl2 + 
-             meansic2 + 
-             meantsm2 + (1|meanchl2), 
-           data = envlen)
+env2m <- lmer(Length ~ Year + 
+            Chl + 
+             SIC + 
+             SST + (1|Year), 
+           data = envlen2r)
 ```
 
 
-```{r warning=FALSE, message=FALSE}
+```{r }
 # graficar efectos aleatorios
 pre <- plot_model(env1m,type = "re", 
                 facet.grid=TRUE, 
@@ -1305,7 +1305,7 @@ pre <- plot_model(env1m,type = "re",
                 show.data = TRUE,
                 jitter = 0.2,
                 terms = "Days")+
-  theme_minimal()
+    theme_few()
 
 pest <- plot_model(env1m,type = "est", 
                 facet.grid=FALSE, 
@@ -1316,10 +1316,15 @@ pest <- plot_model(env1m,type = "est",
                 colors = "Set2",
                 show.data = TRUE,
                 jitter = 0.2)+
-  theme_minimal()
+  theme_few()
+```
 
+
+```{r warning=FALSE, message=FALSE, include=FAlSE}
 ggarrange(pre, pest, ncol = 2)
 ```
+
+
 
 ```{r}
 env_ranef <- ranef(env1m)

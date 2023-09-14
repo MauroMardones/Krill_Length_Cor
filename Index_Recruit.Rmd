@@ -21,7 +21,7 @@ options(bitmapType = "cairo")
 ```
 
 
-```{r}
+```{r warning=F, message=F}
 library(tidyverse)
 ```
 
