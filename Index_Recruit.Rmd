@@ -400,6 +400,8 @@ indseg3 <- ggplot(indice_reclutamiento2  %>%
   coord_flip()
 indseg3
 ```
+
+
 ```{r warning=FALSE, message=FALSE}
 indrec4 <- ggplot(indice_reclutamiento2  %>% 
   group_by(Year,ID,Month) %>%
