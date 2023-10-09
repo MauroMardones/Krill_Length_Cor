@@ -1,8 +1,18 @@
 ---
-title: "Index_Recruit"
-author: "Mauricio Mardones I."
-date: "2023-03-20"
-output: html_document
+title: "Index recruit Antarctic krill"
+subtitle: "Suplementary information HeatWaves Antarctic Paper"
+author:
+  - Mardones Mauricio^[Instituo de Fomento Pesquero, mardones.mauricio@gmail.com]
+  - Lucas Kruger^[Instituto Antártico Chileno]
+  - Lorena Rebolledo^[Instituto Antártico Chileno]
+date:  "`r format(Sys.time(), '%d %B, %Y')`"
+bibliography: seaice.bib
+csl: apa.csl
+link-citations: yes
+linkcolor: blue
+always_allow_html: yes
+output:
+  pdf_document
 ---
 
 
@@ -21,56 +31,272 @@ options(bitmapType = "cairo")
 ```
 
 
-```{r warning=F, message=F}
-library(tidyverse)
+```{r lib, message=F, echo= TRUE}
+library(here)
+#statistics
+library(ggsignif)
+library(lubridate)
+library(easystats) # multiples unciones analiticas
+library(readxl)
+# vizualizacion
+library(ggrepel)
+library(ggpubr)
+library(ggridges)
+library(sf)
+library(GGally)
+library(tidyverse, quietly = TRUE)
+library(knitr, quietly = TRUE)
+library(kableExtra)
+library(raster)
+library(egg)
+library(car) #Variance inflation Factor
+library(ggthemes)
+library(sjPlot)
+library(CCAMLRGIS)
 ```
 
-Load data
+# Contexto
 
-```{r}
+Este análisis tiene como objetivo calcular un índice de reclutamiento (IR) del krill *Euphausia superba* a través de los datos monitoreados por la flota pesquera entre los años 1980 y 2020
 
+# Metodología
 
-names(ohbio6)
-dim(ohbio6)
+Los pasos para calcular el indice son los siguentes:
+
+- Calcular el cuantíl 90% de la REF como proporción de individuos que ingresan a la pesquería. 
+
+- Con este valor del 90%, se calculan los individuos ajo esta talla provenientes de la pesquería. Luego se calcula la cantidad de inviduos bajo esa talla agrupados por distintas covariables.
+
+- Se calcula la proporción respecto al total. Se identifica la distribución de los datos, luego se normalizan para que los datos tengan una distribución normal, y posteriormente,  se estandarizan para llevarlos a un indice e tre -1 y 1, lo cual indica reclutamientos negativos y positivos respectivamente.
+
+- Despliegue en diferentes plot y agrupaciones temporales y espaciales.
+
+# Load data
+
+## Data exploratory analysis
+
+The object `ohbio2` come from data exploration analysis in data request
+CCAMLR data. This objetc have bio information from krill.
+
+```{r  echo=FALSE}
+#datos entregados por secretaria de CCMLAR
+metadata <- load("~/DOCAS/Data/565_C1_KRI_2021-10-01/DATA_PRODUCT_565.RData")
+# Data procesada por MMardones
+#ohbio <- load("DataLengthKrill.RData")
+#ohbio
+#metadata
+#son lo mismo
 ```
-## Calculate Index Recruit
 
 ```{r}
-inderec <- sf4 %>% 
-  drop_na(length_total_cm) %>% 
-  dplyr::group_by(Year, ID) %>% 
-  dplyr::mutate(prolen = length_total_cm - 4.1) %>% 
-  dplyr::mutate(prolen2 = prolen*-1 ) %>% 
-  dplyr::summarize(prolen3 =mean(prolen2))
-
-
-limite_superior <- round(mean(inderec$prolen3) + 
-  1.96 * sd(inderec$prolen3) / sqrt(inderec$prolen3),3)
-limite_inferior <- round(mean(inderec$prolen3) - 
-  1.96 * sd(inderec$prolen3) / sqrt(inderec$prolen3),3)
+#cargo objeto
+meta <- get("METADATA")
+c1 <- get("C1")
+ohbio <- get("OBS_HAUL_BIOLOGY")
+names(ohbio)
+dim(c1)
+dim(ohbio)
 ```
 
 
-```{r}
-inderec$colour <- ifelse(inderec$prolen3 < 0, "negative","positive")
+Join data set with master as `c1` set. This join is trought
+`obs_haul_id` variable to get geoposition variables
 
-indexplot <- ggplot(inderec,
-                    aes(rev(Year),prolen3))+
-  geom_bar(stat="identity",
-           position="identity",
-           aes(fill = colour))+
-  scale_fill_manual(values=c(positive="firebrick1",
-                             negative="black"),
-                    name="")+
-  facet_wrap(.~ID)+
+```{r warning=FALSE}
+ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")
+dim(ohbio2)
+```
+
+Firsts glance. Test how many register have by year. In this case,
+`length_total_cm` by season ccamlr. Same exercise in date period
+`date_catchperiod_start` to separate dates.
+
+```{r}
+ohbio3 <- ohbio2 %>%
+  mutate(Year = year(date_catchperiod_start),
+         Month = month(date_catchperiod_start),
+         Day = day(date_catchperiod_start))
+```
+
+Save data further analysis
+```{r}
+length481 <-ohbio3 %>% 
+  dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47, 43) %>% 
+  filter(asd_code=="481")
+summary(length481)  
+#save(length481, file = "length481.RData")
+```
+
+```{r}
+names(ohbio3)
+ohbio4 <- ohbio3 %>% 
+dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47)
+names(ohbio4)
+
+```
+
+## Maps length data
+
+First thing is get different rater layer to join krill data length
+according different porpoises.
+
+```{r raster}
+
+# Cargo linea de costa
+coast <- load_Coastline()
+coast1<- st_as_sf(coast) 
+coast2 = st_transform(coast1, "+proj=latlong +ellps=WGS84")
+
+# con Statistical Areas con foco en 48.1
+suba <- load_ASDs()
+suba1 <- subset(suba[(3),])
+suba1a<- st_as_sf(suba1) 
+suba1aa = st_transform(suba1a, "+proj=latlong +ellps=WGS84")
+
+# Uso las agrupaciones de Strata
+strata <- st_read("~/DOCAS/Mapas/Antarctic_SHPfiles/Strata.shp",
+                quiet=T)
+strata=st_transform(strata, "+proj=latlong +ellps=WGS84")
+strata <- strata %>% 
+  dplyr::filter(ID != "Outer")
+
+```
+
+Show strata agregation to join length data (Figure\@ref(fig:maptest).
+
+```{r maptest, fig.cap="Strata Maps in 48.1"}
+# y testeo el mapa
+ssmap <- ggplot(strata)+
+  geom_sf(data = strata, aes(fill=strata$ID, 
+                           alpha=0.5))+
+  geom_sf(data = suba1aa,alpha=0.3,
+          colour="red")+
+  geom_sf(data = coast2, colour="black", fill=NA)+
+  scale_fill_viridis_d(option = "F",
+                       name="Stratum")+
+  ylim(230000, 2220000)+
+  xlim(-3095349 , -1858911)+
+  coord_sf(crs = 6932)+
+  scale_alpha(guide="none")+
+  theme_bw()
+ssmap
+```
+
+## Grouping Length data into Strata
+
+### SSMU 48.1 CCAMLR
+
+```{r ssmu1}
+names(ohbio4)
+ohbio5 <- ohbio4 %>% 
+  filter(asd_code==481) %>% 
+  dplyr::select(6, 7, 8, 9, 10, 11, 12) 
+ohbio6 <- st_as_sf(ohbio5 %>% 
+                     drop_na(latitude_set_end), 
+                   coords = c("longitude_set_end", 
+                              "latitude_set_end"),  
+                  crs = "+proj=latlong +ellps=WGS84")
+```
+
+
+Comprobar si tengo datos duplicados
+
+```{r}
+# comoprobar si tengo datos duplicados
+strata2 <- st_make_valid(strata)
+ohbio7 <- st_make_valid(ohbio6)
+krill.strata <- st_join(strata2, ohbio7)
+#saveRDS(krill.strata, "KrillData.Rdata")
+colSums(is.na(krill.strata))
+dim(krill.strata)
+
+```
+
+## Exploración primaria
+
+```{r message=FALSE, warning=FALSE}
+jz3 <- ggplot(krill.strata %>% 
+                drop_na(), 
+              aes(x=length_total_cm, y = as.factor(Month), 
+                      fill = factor(stat(quantile))))+
+  stat_density_ridges(
+    geom = "density_ridges_gradient",
+    calc_ecdf = TRUE,
+     quantiles = c(0.10, 0.90)) +
+  scale_fill_manual(
+    name = "Probability", 
+    values = c("#de2d26", "#fee0d2", "#de2d26"),
+    labels = c("[0 - 0.10]", 
+               "[0.10 - 0.90]", 
+               "[0.90 - 1]"))+
+  facet_grid(ID~Year) +   
+  geom_vline(xintercept = 3.6, color = "red")+
+  scale_x_continuous(breaks = seq(from = 3, 
+                                  to = 12, 
+                                  by = 2))+
+  scale_y_discrete(breaks = seq(from = 1, 
+                                to = 12, 
+                                by = 3))+
+  #scale_fill_viridis_d(name="SubArea")+
   theme_few()+
-  scale_x_continuous(breaks = seq(from = 2000, 
-                                to = 2020, by = 4))+
-  theme(axis.text.x = element_text(angle = 90, hjust = 2))+
-  labs(y="IRK",
-       x="",
-       title = "Index Recruit Krill 48.1")
-indexplot
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        legend.position = "bottom")+
+  #xlim(10,120)+
+  xlab("Total Length (cm.)")+
+  ylab("")
+jz3
+```
+Ahora identifico los distintos cuantiles de los datos de pesquería y estaciones
+
+
+```{r warning=FALSE}
+# Calcular cuantiles por grupo
+cuantiles_por_strata <- tapply(krill.strata$length_total_cm, 
+                              krill.strata$ID,
+                              function(x) quantile(x, c(0.10, 0.5, 0.90)))
+
+
+cuantiles_por_strata <- krill.strata %>% 
+  drop_na(krill.strata)
+
+xxquantile(krill.strata$length_total_cm, 0.90)
+```
+
+Calculo el índice del reclutamiento
+
+```{r warning=FALSE}
+indice_reclutamiento <- talla2022exp %>%
+  filter(LONGITUD<cuantil_10est) %>% 
+  group_by(ANO_ARR, MES_ARR, POLIGONO, ZONA, POLIGONO_IFOP) %>%
+  summarize(PROP = n() / nrow(talla2022exp)) %>% 
+  mutate(PROPLOG =log(PROP))
+# Crear gráficos en facet_wrap de barras para representar el índice de reclutamiento
+```
+
+ahora estandarizo los datos entre -1 y 1.
+
+```{r warning=FALSE}
+a <- -1  # Límite inferior del rango objetivo
+b <- 1   # Límite superior del rango objetivo
+
+# Calcular el valor mínimo y máximo de tus datos
+min_x <- min(indice_reclutamiento$PROPLOG)
+max_x <- max(indice_reclutamiento$PROPLOG)
+
+# Aplicar la fórmula de normalización
+indice_reclutamiento$PROPLOG2 <- ((indice_reclutamiento$PROPLOG- min_x) / (max_x - min_x)) * (b - a) + a
 ```
 
 
+veo la distribucion de las variables
+
+```{r warning=FALSE, message=FALSE}
+nor <- ggplot(indice_reclutamiento, aes(PROP)) + 
+  geom_histogram(fill="grey")+
+  theme_few()
+log <- ggplot(indice_reclutamiento, aes(PROPLOG)) + 
+  geom_histogram(fill="grey")+
+  theme_few()
+
+ggarrange(nor, log, ncol = 2)
+```
