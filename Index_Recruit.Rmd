@@ -15,6 +15,17 @@ output:
   pdf_document
 ---
 
+```{=tex}
+\fontsize{12}{16}
+\selectfont{}
+```
+\newpage
+
+```{=latex}
+\setcounter{tocdepth}{3}
+\tableofcontents
+```
+\newpage
 
 ```{r setup1}
 rm(list = ls())
@@ -23,7 +34,8 @@ knitr::opts_chunk$set(echo = TRUE,
                       warning = FALSE,
                       fig.align = 'center',
                       dev = 'jpeg',
-                      dpi = 300)
+                      dpi = 300,
+                      out.width='120%')
 #XQuartz is a mess, put this in your onload to default to cairo instead
 options(bitmapType = "cairo") 
 # (https://github.com/tidyverse/ggplot2/issues/2655)
@@ -71,7 +83,7 @@ Los pasos para calcular el indice son los siguentes:
 
 - Despliegue en diferentes plot y agrupaciones temporales y espaciales.
 
-# Load data
+## Load data
 
 ## Data exploratory analysis
 
@@ -118,24 +130,22 @@ ohbio3 <- ohbio2 %>%
          Day = day(date_catchperiod_start))
 ```
 
-Save data further analysis
+filter necesary data to further analysis
 ```{r}
 length481 <-ohbio3 %>% 
   dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47, 43) %>% 
   filter(asd_code=="481")
-summary(length481)  
 #save(length481, file = "length481.RData")
 ```
 
 ```{r}
-names(ohbio3)
 ohbio4 <- ohbio3 %>% 
 dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47)
 names(ohbio4)
 
 ```
 
-## Maps length data
+## Maps works
 
 First thing is get different rater layer to join krill data length
 according different porpoises.
@@ -162,6 +172,8 @@ strata <- strata %>%
 
 ```
 
+## Strata maps
+
 Show strata agregation to join length data (Figure\@ref(fig:maptest).
 
 ```{r maptest, fig.cap="Strata Maps in 48.1"}
@@ -184,11 +196,10 @@ ssmap
 
 ## Grouping Length data into Strata
 
-### SSMU 48.1 CCAMLR
-
 ```{r ssmu1}
 names(ohbio4)
 ohbio5 <- ohbio4 %>% 
+  drop_na() %>% 
   filter(asd_code==481) %>% 
   dplyr::select(6, 7, 8, 9, 10, 11, 12) 
 ohbio6 <- st_as_sf(ohbio5 %>% 
@@ -253,22 +264,20 @@ Ahora identifico los distintos cuantiles de los datos de pesquería y estaciones
 # Calcular cuantiles por grupo
 cuantiles_por_strata <- tapply(krill.strata$length_total_cm, 
                               krill.strata$ID,
-                              function(x) quantile(x, c(0.10, 0.5, 0.90)))
+                              function(x) quantile(x, 
+                                                   c(0.10,
+                                                     0.5, 
+                                                     0.90)))
 
-
-cuantiles_por_strata <- krill.strata %>% 
-  drop_na(krill.strata)
-
-xxquantile(krill.strata$length_total_cm, 0.90)
 ```
 
-Calculo el índice del reclutamiento
+Calculo el índice del reclutamiento de [@Maschette2020]
 
 ```{r warning=FALSE}
-indice_reclutamiento <- talla2022exp %>%
-  filter(LONGITUD<cuantil_10est) %>% 
-  group_by(ANO_ARR, MES_ARR, POLIGONO, ZONA, POLIGONO_IFOP) %>%
-  summarize(PROP = n() / nrow(talla2022exp)) %>% 
+indice_reclutamiento <- krill.strata %>%
+  filter(length_total_cm< 3.6 ) %>% 
+  group_by(Year, Month, ID) %>%
+  summarize(PROP = n() / nrow(krill.strata)) %>% 
   mutate(PROPLOG =log(PROP))
 # Crear gráficos en facet_wrap de barras para representar el índice de reclutamiento
 ```
@@ -300,3 +309,171 @@ log <- ggplot(indice_reclutamiento, aes(PROPLOG)) +
 
 ggarrange(nor, log, ncol = 2)
 ```
+
+
+```{r warning=FALSE}
+indrec1 <- ggplot(indice_reclutamiento , 
+       aes(x = factor(Year), 
+           y = PROP,
+           fill=ID)) +
+  geom_boxplot() +
+  facet_wrap(ID~., ncol=5) +
+  scale_fill_viridis_d(option = "F",
+                       name="Stratum")+
+  scale_x_discrete(breaks = seq(from = 1996, 
+                                to = 2022, 
+                                by = 4))+
+  theme_few()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  labs(x = "ANO", 
+        y = "Índice de Reclutamiento")+
+  ylim(0, 0.001)
+indrec1
+```
+ahora como columnas por meses pero cambio los nombres
+
+```{r}
+# Crear una nueva columna con los nombres de los meses
+indice_reclutamiento2 <- indice_reclutamiento %>%
+  mutate(Month = case_when(
+    Month == 1 ~ "January",
+    Month == 2 ~ "February",
+    Month == 3 ~ "March",
+    Month == 4 ~ "April",
+    Month == 5 ~ "May",
+    Month == 6 ~ "June",
+    Month == 7 ~ "July",
+    Month == 8 ~ "August",
+    Month == 9 ~ "September",
+    Month == 10 ~ "October",
+    Month == 11 ~ "November",
+    Month == 12 ~ "December")) %>% 
+  mutate(Month = factor(Month, levels = c("January", 
+                                          "February", 
+                                          "March",
+                                          "April",
+                                          "May",
+                                          "June",
+                                          "July",
+                                          "August",
+                                          "September",
+                                          "October",
+                                          "November", 
+                                          "December")))
+
+
+#ahora trimestres
+
+# Definir una función para asignar trimestres
+# Definir reglas para asignar trimestres
+indice_reclutamiento2<- indice_reclutamiento2 %>%
+  mutate(quarter = case_when(
+    Month %in% c("January", "February", "March") ~ "Q1",
+    Month %in% c("April", "May", "June") ~ "Q2",
+    Month %in% c("July", "August", "September") ~ "Q3",
+    Month %in% c("October", "November", "December") ~ "Q4"))
+
+```
+
+
+
+```{r warning=FALSE, message=FALSE}
+indseg3 <- ggplot(indice_reclutamiento2  %>% 
+  group_by(Year,ID) %>%
+  summarise(PROPLOG3=mean(PROPLOG2)), 
+       aes(x = factor(Year), 
+           y = PROPLOG3,
+           fill=PROPLOG3 > 0)) +
+  geom_bar(stat = "identity")  +
+  scale_fill_manual(values = c("black", "red"),
+                    labels = c("Negativo", "Positivo"),
+                    name="Index Recruit Krill") +
+  facet_wrap(.~ID, ncol = 5) +
+  geom_hline(yintercept = 0, color = "red")+
+  scale_x_discrete(breaks = seq(from = 1996, to = 2022, by = 1))+
+  theme_few()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.text = element_text(size=6),
+        legend.position = "bottom")+
+  labs(x = "",
+       y ="")+
+  coord_flip()
+indseg3
+```
+```{r warning=FALSE, message=FALSE}
+indrec4 <- ggplot(indice_reclutamiento2  %>% 
+  group_by(Year,ID,Month) %>%
+  summarise(PROPLOG3=mean(PROPLOG2)), 
+       aes(x = Month, 
+           y = PROPLOG3,
+           fill=PROPLOG3 > 0)) +
+  geom_bar(stat = "identity")  +
+  scale_fill_manual(values = c("black", "red"),
+                    labels = c("Negative", "Positive"),
+                    name="Index Recruit Krill") +
+  facet_grid(ID~Year) +
+  geom_hline(yintercept = 0, color = "red")+
+  #scale_x_discrete(breaks = seq(from = 1, to = 12, by = 2))+
+  theme_few()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.text = element_text(size=6),
+        legend.position = "bottom")+
+  labs(x = "", 
+        y = "")+
+  coord_flip()
+indrec4
+```
+
+Por trimestres
+
+```{r warning=FALSE, message=FALSE}
+indrec5 <- ggplot(indice_reclutamiento2  %>% 
+  group_by(Year,ID,quarter) %>%
+  summarise(PROPLOG3=mean(PROPLOG2)), 
+       aes(x = quarter, 
+           y = PROPLOG3,
+           fill=PROPLOG3 > 0)) +
+  geom_bar(stat = "identity")  +
+  scale_fill_manual(values = c("black", "red"),
+                    labels = c("Negative", "Positive"),
+                    name="Index Recruit Krill") +
+  facet_grid(ID~Year) +
+  geom_hline(yintercept = 0, color = "red")+
+  #scale_x_discrete(breaks = seq(from = 1, to = 12, by = 2))+
+  theme_few()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.text = element_text(size=6),
+        legend.position = "bottom")+
+  labs(x = "", 
+        y = "")+
+  coord_flip()
+indrec5
+```
+
+Grafico como Oscilación por Strata
+
+```{r warning=FALSE, message=FALSE}
+recosc <- ggplot(indice_reclutamiento2  %>% 
+  group_by(Year,ID) %>%
+  summarise(PROPLOG3=mean(PROPLOG2)), 
+       aes(x = Year, y = PROPLOG3)) +
+  geom_ribbon(aes(ymin = pmax(PROPLOG3, 0), 
+                  ymax = 0), 
+              fill = "#de2d26", 
+              alpha = 0.8) +  # Área por encima de la línea
+  geom_ribbon(aes(ymin = pmin(PROPLOG3, 0), 
+                  ymax = 0), 
+              fill = "black", 
+              alpha = 0.8) +  # Área por debajo de la línea
+  geom_hline(yintercept = 0, color = "red")+
+  geom_line(color = "black") +  # Línea de anomalías
+  geom_point( alpha=0.2,
+              size= 0.9)+
+  labs(x = "AÑO", y = "Index Krill recruit") +
+   facet_wrap(.~ID, ncol = 5)+
+  theme_few()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 2))
+recosc
+
+```
+# References
