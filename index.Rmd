@@ -490,13 +490,15 @@ Show strata agregation to join length data (Figure\@ref(fig:maptest).
 ```{r maptest, fig.cap="Strata Maps in 48.1"}
 # y testeo el mapa
 ssmap <- ggplot()+
-  geom_sf(data = strata, aes(fill=strata$ID, 
-                           alpha=0.3))+
+  # geom_sf(data = strata, aes(fill=strata$ID, 
+  #                          alpha=0.3))+
   # geom_sf(data = ssmu481aa, aes(fill=ssmu481aa$GAR_Short_Label, 
   #                         alpha=0.3))+
   geom_sf(data = coast2, colour="black", fill=NA)+
   #geom_sf(data = gridcrop1, colour="black", fill=NA)+
-  #geom_sf(data= suba1aa, fill=NA)+
+  geom_sf(data= suba1aa, 
+          colour="red",
+          fill=NA)+
   # geom_sf(aes(fill=ssmu481aa$GAR_Short_Label,
   #              alpha=0.3))+
   scale_fill_viridis_d(option = "F",
