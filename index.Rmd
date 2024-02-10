@@ -71,6 +71,7 @@ library(car) #Variance inflation Factor
 library(ggthemes)
 library(sjPlot)
 library(GGally)
+library(CCAMLRGIS)
 ```
 
 # Background
@@ -483,6 +484,8 @@ strata=st_transform(strata, "+proj=latlong +ellps=WGS84")
 strataclip <- st_read("~/DOCAS/Data/WAP-Heatwaves/peninsula_correct.shp",
                 quiet=T)
 strataclip=st_transform(strata, "+proj=latlong +ellps=WGS84")
+
+
 ```
 
 Show strata agregation to join length data (Figure\@ref(fig:maptest).
@@ -490,27 +493,28 @@ Show strata agregation to join length data (Figure\@ref(fig:maptest).
 ```{r maptest, fig.cap="Strata Maps in 48.1"}
 # y testeo el mapa
 ssmap <- ggplot()+
-  # geom_sf(data = strata, aes(fill=strata$ID, 
-  #                          alpha=0.3))+
-  # geom_sf(data = ssmu481aa, aes(fill=ssmu481aa$GAR_Short_Label, 
-  #                         alpha=0.3))+
+  geom_sf(data = strata %>% 
+            filter(ID != "Outer"), 
+          aes(fill=ID, 
+              alpha=0.3))+
+  geom_text_repel(data = strata %>% 
+            filter(ID != "Outer"), 
+            aes(x = Labx, y = Laby, 
+                label = ID), 
+            min.segment.length = 0,
+                             box.padding = 2,
+                             max.overlaps = 100)+
   geom_sf(data = coast2, colour="black", fill=NA)+
-  #geom_sf(data = gridcrop1, colour="black", fill=NA)+
   geom_sf(data= suba1aa, 
           colour="red",
           fill=NA)+
-  # geom_sf(aes(fill=ssmu481aa$GAR_Short_Label,
-  #              alpha=0.3))+
-  scale_fill_viridis_d(option = "F",
-                       name="Strata")+
-  #geom_sf_label(aes(label = strata$ID))+
-  # labs(fill = "SSMU")+
+  scale_fill_viridis_d(option = "E")+
   ylim(230000, 2220000)+
   xlim(-3095349 , -1858911)+
   # coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
   coord_sf(crs = 6932)+
-  scale_alpha(guide="none")+
-  theme_bw()
+  theme_bw()+
+  theme(legend.position = "none")
 ssmap
 ```
 
@@ -524,7 +528,12 @@ ssmumap <- ggplot()+
   geom_sf(data = ssmu481aa, aes(fill=ssmu481aa$GAR_Short_Label,
                           alpha=0.3))+
   geom_sf(data = coast2, colour="black", fill=NA)+
-  #geom_sf(data = gridcrop1, colour="black", fill=NA)+
+   geom_text_repel(data = ssmu481aa, 
+            aes( 
+                label = ssmu481aa$GAR_Name), 
+            min.segment.length = 0,
+                             box.padding = 2,
+                             max.overlaps = 100)+
   geom_sf(data= suba1aa, fill=NA,
           col="red")+
   # geom_sf(aes(fill=ssmu481aa$GAR_Short_Label,
