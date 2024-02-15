@@ -1148,7 +1148,7 @@ resu <- correlation(envlen4 %>%
          SSM=meantsm2))
 resu
 summary(resu, redundant=TRUE)
-report(resu)
+
 ```
 
 We can identify through a correlation matrix the data of our set,
