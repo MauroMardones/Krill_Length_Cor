@@ -374,7 +374,8 @@ mmm.)
 
 ```{r warning=FALSE}
 box <- ggplot(ohbio4) +
-  geom_boxplot(aes(length_total_cm, group=season_ccamlr), 
+  geom_boxplot(aes(length_total_cm, 
+                   group=season_ccamlr), 
                alpha=0.3,
                fill=3)+
   geom_vline(xintercept = 3.6, color = "red")+
@@ -487,8 +488,23 @@ strataclip=st_transform(strata, "+proj=latlong +ellps=WGS84")
 
 
 ```
-
-Show strata agregation to join length data (Figure\@ref(fig:maptest).
+Map whole antactic
+```{r}
+# y testeo el mapa
+antar <- ggplot()+
+  geom_sf(data = coast2, 
+          colour="black", 
+          fill=NA)+
+  geom_sf(data= suba1aa, 
+          colour="red",
+          fill=NA)+
+  scale_fill_viridis_d(option = "E")+
+  # coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
+  coord_sf(crs = 6932)+
+  theme_few()+
+  theme(legend.position = "none")
+antar
+```
 
 ```{r maptest, fig.cap="Strata Maps in 48.1"}
 # y testeo el mapa
@@ -503,12 +519,12 @@ ssmap <- ggplot()+
                 label = ID), 
             min.segment.length = 0,
                              box.padding = 2,
-                             max.overlaps = 100)+
+                             max.overlaps = 10)+
   geom_sf(data = coast2, colour="black", fill=NA)+
   geom_sf(data= suba1aa, 
           colour="red",
           fill=NA)+
-  scale_fill_viridis_d(option = "E")+
+  scale_fill_viridis_d(option = "F")+
   ylim(230000, 2220000)+
   xlim(-3095349 , -1858911)+
   # coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
@@ -1132,6 +1148,7 @@ resu <- correlation(envlen4 %>%
          SSM=meantsm2))
 resu
 summary(resu, redundant=TRUE)
+report(resu)
 ```
 
 We can identify through a correlation matrix the data of our set,
@@ -1160,22 +1177,22 @@ envlen2r <- envlen2 %>%
          SST = meantsm2,
          Length = lepro)
 
-env1 <- glm(lepro ~ Year,
+env1 <- glm(Length ~ Year,
             data = envlen2r)
-env2 <- glm(lepro ~ Year + 
+env2 <- glm(Length ~ Year + 
               SIC,
             data = envlen2r)
-env3 <- glm(lepro ~ Year + 
+env3 <- glm(Length ~ Year + 
               SIC +
              Chl ,
             data = envlen2r)
-env4 <- glm(lepro ~ Year + 
+env4 <- glm(Length ~ Year + 
               SIC +
               Chl + 
               SST ,
             data = envlen2r)
 #spatial component
-env5 <- glm(lepro ~ Year + 
+env5 <- glm(Length ~ Year + 
               SIC +
               Chl +
               SST +
@@ -1239,7 +1256,7 @@ compare_performance(env1,
                     env4, 
                     env5)
 
-
+report(env4)
 ```
 
 
@@ -1341,6 +1358,8 @@ ggarrange(pre, pest, ncol = 2)
 env_ranef <- ranef(env1m)
 summary(env_ranef)
 mean(env_ranef$cellid[, 1])
+
+report(env2m)
 ```
 
 # Conclusion
