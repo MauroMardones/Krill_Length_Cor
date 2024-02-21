@@ -657,6 +657,9 @@ glimpse(strata)
 dim(strata)
 
 
+conteo <- sf4 %>% 
+  group_by(ID) %>% 
+  count()
 
 ohbiopro <- ohbio6 %>%
   dplyr::group_by(gear_type, Year, Month, geometry) %>% 
