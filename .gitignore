@@ -7,7 +7,7 @@
 
 # User-specific files
 .Ruserdata
-
+*.csv
 # Example code in package build process
 *-Ex.R
 
@@ -45,3 +45,4 @@ length481.Rdata
 
 # Figures .jpeg
 *.jpeg
+*.png
