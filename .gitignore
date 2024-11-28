@@ -42,7 +42,8 @@ vignettes/*.pdf
 sf4.RData
 sf3.RData
 length481.Rdata
-
+sf3_mochina.RData
+sf4_nochina.RData
 # Figures .jpeg
 *.jpeg
 *.png

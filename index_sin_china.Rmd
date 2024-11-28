@@ -74,6 +74,7 @@ library(GGally)
 library(CCAMLRGIS)
 library(modelsummary)
 library(tinytable)
+library(psych)
 ```
 
 
@@ -379,7 +380,8 @@ strataclip=st_transform(strata,
 # y testeo el mapa
 ssmap <- ggplot()+
   geom_sf(data = strata %>%
-           filter(ID != "Outer"), 
+           filter(ID != "Outer")%>% 
+                 mutate(ID = str_replace(ID, "Extra", "GS")), 
           aes(fill=ID, 
               alpha=0.3))+
   geom_text_repel(data = strata %>% 
@@ -411,6 +413,7 @@ ssmap
 
 ```{r ssmu1}
 dim(ohbio4)
+dim(ohbio5)
 ohbio5 <- ohbio4 %>% 
   filter(asd_code==481,
          vessel_nationality_code != "CHN") %>% 
@@ -581,7 +584,7 @@ dim(sf3)
 ```{r saveda, eval=FALSE}
 save("sf4", file = "sf4_nochina.RData")
 save("sf3", file = "sf3_mochina.RData")
-load("~/DOCAS/Data/Krill_Length_Cor/sf4.RData")
+#load("~/DOCAS/Data/Krill_Length_Cor/sf4.RData")
 ```
 
 
@@ -825,16 +828,16 @@ envgru <- dataenvf %>%
                    meantsm2=mean(meantsm))
 dim(envgru)
 summary(envgru)
-
-# Test
-envgru2 <- dataenvf %>%
-  dplyr::select(1, 2, 3, 6, 9, 10) %>% 
-  drop_na(ANO.x) %>% 
-  dplyr::rename(Year=ANO.x) %>% 
-  dplyr::group_by(cellid,Year, geometry) %>% 
-  dplyr::summarise(meansic2=mean(meansic),
-                   meanchl2=mean(meanchl),
-                   meantsm2=mean(meantsm))
+# 
+# # Test
+# envgru2 <- dataenvf %>%
+#   dplyr::select(1, 2, 3, 6, 9, 10) %>%
+#   drop_na(ANO.x) %>%
+#   dplyr::rename(Year=ANO.x) %>%
+#   dplyr::group_by(cellid,Year, geometry) %>%
+#   dplyr::summarise(meansic2=mean(meansic),
+#                    meanchl2=mean(meanchl),
+#                    meantsm2=mean(meantsm))
 ```
 
 Join merge object in a new data base.
@@ -1017,7 +1020,7 @@ $\begin{aligned} r = 1- \frac{6\sum_{i=1}^n D_{i}^n}{n (n^2 - 1)}\end{aligned}$
 # change to data frame
 envlen3 <- as.data.frame(envlen2)
 envlen4 <- envlen3 %>% 
-  dplyr::select(3, 4, 5, 6)
+  dplyr::select(3, 4, 5, 6, 7)
 ```
 
 Plot to show correlation trough different ways. First, the matri
@@ -1034,10 +1037,12 @@ kableExtra::kable(cov(envlen4)) %>%
 
 ```{r message=FALSE, warning=FALSE}
 pairs.panels(envlen4 %>% 
+               mutate(meantsm2=meantsm2-270)%>% 
                dplyr::rename(Length=lepro,
+                             SDLength = sd_lepro,
          SIC=meansic2,
-         CHla=meanchl2,
-         SSM=meantsm2),
+         Chla=meanchl2,
+         SST=meantsm2),
              smooth = TRUE,      
              scale = FALSE,      
              density = TRUE,     
@@ -1257,6 +1262,8 @@ pest <- plot_model(env1m,type = "est",
                 show.data = TRUE,
                 jitter = 0.2)+
   theme_few()
+
+ggarrange(glvoid, pre, pest, ncol=3)
 ```
 
 
