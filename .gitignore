@@ -47,3 +47,6 @@ sf4_nochina.RData
 # Figures .jpeg
 *.jpeg
 *.png
+# Folder
+*data/
+*index_files/

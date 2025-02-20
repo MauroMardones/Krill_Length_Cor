@@ -143,22 +143,21 @@ CCAMLR data. This objetc have bio information from krill.
 
 ```{r  echo=FALSE}
 #datos entregados por secretaria de CCMLAR
-metadata <- load("~/DOCAS/Data/565_C1_KRI_2021-10-01/DATA_PRODUCT_565.RData")
-# Data procesada por MMardones
+#Data procesada por MMardones
 #ohbio <- load("DataLengthKrill.RData")
-#ohbio
-#metadata
-#son lo mismo
-```
-
-```{r}
-#cargo objeto
-meta <- get("METADATA")
-c1 <- get("C1")
-ohbio <- get("OBS_HAUL_BIOLOGY")
-names(ohbio)
-dim(c1)
-dim(ohbio)
+env_metadata <- new.env()
+env_metadata2 <- new.env()
+# Cargar cada archivo en su propio entorno
+load("~/DOCAS/Data/565_C1_KRI_2021-10-01/DATA_PRODUCT_565.RData", 
+     envir = env_metadata)
+load("~/DOCAS/Data/669_CHL_2024-03-20/DataProduct/DATA_PRODUCT_669.RData", 
+     envir = env_metadata2) # 2020 to 2023
+# Extraer los objetos necesarios desde el primer entorno
+c1 <- env_metadata$C1
+ohbio <- env_metadata$OBS_HAUL_BIOLOGY
+# Extraer los objetos necesarios desde el periodo 2020
+C1_669 <- env_metadata2$C1
+OBS_HAUL_BIOLOGY_669 <- env_metadata2$OBS_HAUL_BIOLOGY
 ```
 
 
@@ -166,8 +165,20 @@ Join data set with master as `c1` set. This join is trought
 `obs_haul_id` variable to get geoposition variables
 
 ```{r warning=FALSE}
-ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")
-dim(ohbio2)
+ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")%>%
+  dplyr::select(-c("notes"))
+names(ohbio2)
+
+ohbio2021 <- left_join(C1_669,
+                       OBS_HAUL_BIOLOGY_669,
+                       by="obs_haul_id") %>%
+  dplyr::select(-c("ship_code", "comments" ,"taxon_id"))
+
+names(ohbio2021)
+
+ohbio2merge <- rbind(ohbio2,
+                     ohbio2021)
+
 ```
 
 Firsts glance. Test how many register have by year. In this case,
@@ -175,59 +186,23 @@ Firsts glance. Test how many register have by year. In this case,
 `date_catchperiod_start` to separate dates.
 
 ```{r}
-ohbio3 <- ohbio2 %>%
+ohbio3 <- ohbio2merge %>%
   mutate(Year = year(date_catchperiod_start),
          Month = month(date_catchperiod_start),
          Day = day(date_catchperiod_start))
 ```
 
-Save data further analysis
-```{r}
-length481 <-ohbio3 %>% 
-  dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47, 43) %>% 
-  filter(asd_code=="481")
-summary(length481)  
-#save(length481, file = "length481.RData")
-```
 
 ```{r}
 names(ohbio3)
 ohbio4 <- ohbio3 %>% 
-dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47)
+dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 43, 44, 45, 46, 47)
 names(ohbio4)
 
 ```
 
 ## Plots
 
-Filter data regarding to previous glances. Follow with a quick glimpse
-to all 48 subarea length composition from monitoring fisheries.
-
-```{r message=F, warning=F}
-jz <- ggplot(ohbio4 %>% 
-               dplyr::filter(Year>2000),
-             aes(x=length_total_cm, 
-                 y = as.factor(Year), 
-                 fill=asd_code))+
-  #geom_joy(alpha=0.9) +
-  geom_density_ridges(stat = "binline", bins = 50, 
-                      scale = 1.8, 
-                      draw_baseline = FALSE,
-                      alpha=0.8)+
-  facet_wrap(.~asd_code, ncol=3) +   
-  geom_vline(xintercept = 3.6, color = "red")+
-  scale_x_continuous(breaks = seq(from = 1, to = 10, 
-                                  by = 1))+
-  scale_y_discrete(breaks = seq(from = 2000, 
-                                to = 2020, by = 1))+
-  scale_fill_viridis_d(name="SubArea",
-                       option="F")+
-  theme_mau()+
-  xlim(0,10)+
-  xlab("Longitud (cm.)")+
-  ylab("")
-jz
-```
 
 Another way to watch this data is regarding thecnics trawl like Figure
 \@ref(fig:lenthtrwal).
@@ -249,7 +224,7 @@ trwal <- ggplot(ohbio4 %>%
   scale_x_continuous(breaks = seq(from = 1, to = 10, 
                                   by = 1))+
   scale_y_discrete(breaks = seq(from = 2000, 
-                                to = 2020, by = 1))+
+                                to = 2023, by = 1))+
   scale_fill_viridis_d(name="Trawl Technique",
                        option="F")+
   theme_bw()+
@@ -261,39 +236,7 @@ trwal <- ggplot(ohbio4 %>%
 trwal
 ```
 
-Same plot by Sub Area and month trought year. With this kind of plot, we
-can see the recruit power interannually (Figure\@ref(fig:lengthmonth).
 
-Just 48.1 SubArea plot
-
-```{r  eval=FALSE, fig.align="center", message=F, warning=F}
-yma481 <- ggplot(ohbio4 %>% 
-               filter(Year>2000,
-                      asd_code==481),
-             aes(x=length_total_cm, 
-                 y = as.factor(Month),
-                 fill=asd_code))+
-  #geom_joy(alpha=0.9) +
-  geom_density_ridges(stat = "binline", bins = 50, 
-                      scale = 1.5, 
-                      draw_baseline = FALSE,
-                      alpha=0.5)+
-  facet_wrap(.~Year, ncol=5) +   
-  geom_vline(xintercept = 3.6, color = "red")+
-  scale_x_continuous(breaks = seq(from = 1, to = 10, 
-                                  by = 1))+
-  scale_y_discrete(breaks = seq(from = 1, 
-                                to = 12, by = 1))+
-  scale_fill_viridis_d(name="SubArea",
-                       option="F")+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, 
-                                   hjust = 1))+
-  xlim(0,10)+
-  xlab("Longitud (cm.)")+
-  ylab("")
-yma481
-```
 
 
 
@@ -328,6 +271,59 @@ hi <- ggplot(ohbio4)+
 
 ggarrange(box, hi, ncol = 2)
   
+```
+## Preparo  bases para toda la 48 con `ohbio4`
+
+```{r}
+# 48.1
+s481 <- ohbio4 %>% 
+  drop_na(length_total_cm) %>% 
+  filter(asd_code== "481",
+         vessel_nationality_code != "CHN")  
+# cut in order
+s481$catlon <- cut(x = s481$length_total_cm, 
+                 breaks = seq(0,7,0.2),
+                 labels = seq(0,6.8,0.2),
+                 right = FALSE)
+
+s481t <- table(s481$Year, s481$catlon)
+s481t1 <-t(as.data.frame.matrix(s481t)); class(s481t1)
+
+
+# 48.2
+s482 <- ohbio4 %>% 
+  drop_na(length_total_cm) %>% 
+  filter(asd_code== "482",
+         vessel_nationality_code != "CHN")  
+# cut in order
+s482$catlon <- cut(x = s482$length_total_cm, 
+                 breaks = seq(0,7,0.2),
+                 labels = seq(0,6.8,0.2),
+                 right = FALSE)
+
+s482t <- table(s482$Year, s482$catlon)
+s482t1 <-t(as.data.frame.matrix(s482t)); class(s482t1)
+
+# 48.3
+s483 <- ohbio4 %>% 
+  drop_na(length_total_cm) %>% 
+  filter(asd_code== "483",
+         vessel_nationality_code != "CHN")  
+# cut in order
+s483$catlon <- cut(x = s483$length_total_cm, 
+                 breaks = seq(0,7,0.2),
+                 labels = seq(0,6.8,0.2),
+                 right = FALSE)
+
+s483t <- table(s483$Year, s483$catlon)
+s483t1 <-t(as.data.frame.matrix(s483t)); class(s483t1)
+
+# A su vez puedo generar el archivo por separado
+write.csv(s481t1, "lenght481_nochina.csv", sep = ",", row.names = TRUE)
+write.csv(s482t1, "lenght482_nochina.csv", sep = ",", row.names = TRUE)
+write.csv(s483t1, "lenght483_nochina.csv", sep = ",", row.names = TRUE)
+
+
 ```
 
 (Probar datos con RaadTools library [@Raadtools2022])
@@ -381,16 +377,16 @@ strataclip=st_transform(strata,
 ssmap <- ggplot()+
   geom_sf(data = strata %>%
            filter(ID != "Outer")%>% 
-                 mutate(ID = str_replace(ID, "Extra", "GS")), 
+                 mutate(ID = str_replace_all(ID, "Extra", "GS")), 
           aes(fill=ID, 
               alpha=0.3))+
   geom_text_repel(data = strata %>% 
             filter(ID != "Outer"), 
             aes(x = Labx, y = Laby, 
                 label = ID), 
-            min.segment.length = 0,
+            min.segment.length = 2,
                              box.padding = 2,
-                             max.overlaps = 10)+
+                             max.overlaps = 15)+
   geom_sf(data = coast2, colour="black", fill=NA)+
   geom_sf(data= suba1aa, 
           colour="red",
@@ -409,16 +405,27 @@ ssmap
 
 ### SSMU 48.1 CCAMLR
 
-### SACO CHINA!!!
+### SACO CHINA!!! y uso solo hasta 2020 para el analisis
 
 ```{r ssmu1}
 dim(ohbio4)
-dim(ohbio5)
 ohbio5 <- ohbio4 %>% 
   filter(asd_code==481,
+         Year < 2021,
          vessel_nationality_code != "CHN") %>% 
   dplyr::select(1, 6, 7, 8, 9, 10, 11, 12) 
+
+ohbio5_conchina<- ohbio4 %>% 
+  filter(asd_code==481,
+         Year < 2021,) %>% 
+  dplyr::select(1, 6, 7, 8, 9, 10, 11, 12) 
+
 ohbio6 <- st_as_sf(ohbio5 %>% 
+                     drop_na(latitude_set_end), 
+                   coords = c("longitude_set_end", 
+                              "latitude_set_end"),  
+                  crs = "+proj=latlong +ellps=WGS84")
+ohbio6_conchina <- st_as_sf(ohbio5_conchina %>% 
                      drop_na(latitude_set_end), 
                    coords = c("longitude_set_end", 
                               "latitude_set_end"),  
@@ -513,13 +520,8 @@ glpro <- ggplot() +
   #coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
   ylim(230000, 2220000)+
   xlim(-3095349 , -1858911)+
-  labs(title = "Krill Length mean (cm)")+
+  labs(subtitle = "Krill Length mean (cm)")+
   coord_sf(crs = 6932)
-glpro
-```
-
-sD
-```{r plogri2}
 gl <- ggplot() +
    geom_sf(data=grilen3 %>% 
              drop_na(sd_lepro) %>% 
@@ -528,7 +530,7 @@ gl <- ggplot() +
                    labels = c("0-0.2", "0.2-0.4", "0.4-0.6", "0.6-0.8", "0.8-1.0", "1.0-1.2"),
                    include.lowest = TRUE)),
            aes(fill = sd_nivel), color=NA) +
-  scale_fill_brewer(palette = "Reds" ,
+  scale_fill_brewer(palette = "YlOrBr" ,
                     name = "")+
   geom_sf(data = suba1aa, fill=NA, col=2)+
   geom_sf(data = coast2, 
@@ -546,7 +548,9 @@ gl <- ggplot() +
   xlim(-3095349 , -1858911)+
   labs(subtitle = "Krill Length Standar Deviation")+
   coord_sf(crs = 6932)
-gl
+
+ggarrange(glpro, gl,
+          ncol=2) 
 ```
 
 
@@ -571,49 +575,28 @@ ohbiopro <- ohbio6 %>%
 # comoprobar si tengo datos duplicados
 strata2 <- st_make_valid(strata)
 ohbio62 <- st_make_valid(ohbio6)
-
+ohbio6_conchina2 <- st_make_valid(ohbio6_conchina)
 
 
 sf3 <- st_join(strata2, ohbiopro)
 sf4 <- st_join(strata2, ohbio6)
+sf5 <- st_join(strata2,
+               ohbio6_conchina2)
 dim(sf4)
 dim(sf3)
+dim(sf5)
 ```
 
 
 ```{r saveda, eval=FALSE}
-save("sf4", file = "sf4_nochina.RData")
-save("sf3", file = "sf3_mochina.RData")
-#load("~/DOCAS/Data/Krill_Length_Cor/sf4.RData")
+#save("sf4", file = "sf4_nochina.RData")
+#save("sf3", file = "sf3_mochina.RData")
+#save("sf5", file = "sf5_china.RData")
+load("~/DOCAS/Data/Krill_Length_Cor/sf4_nochina.RData")
 ```
 
 
-scattter plot lenght data
-```{r warning=F}
-lentraplot <- ggplot(sf3 %>% 
-                   filter(Year>2000,
-                      ID !="Outer"), 
-               aes(Year, tapro,
-               fill=Month))+
-    geom_point(alpha=0.3, 
-               shape=21, 
-               show.legend = T) +
-    scale_fill_viridis_c(option="G")+
-    geom_hline(yintercept = 4.16,
-               color = "black",
-               linetype  = 2)+
-    stat_smooth(method = "loess",
-                col="red")+
-    theme_bw()+ 
-    facet_wrap(.~ID)+
-    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
-    guides(fill = guide_legend(reverse=F))+
-    
-    ylab("") +
-    xlab("") 
-lentraplot
 
-```
 histogram length data
 
 
@@ -644,11 +627,11 @@ jzstrata <- ggplot(sf4 %>%
 jzstrata
 ```
 
-Violin plot by strata
+Violin plot by strata with China
 
 ```{r}
 
-viostra <- ggplot(sf4 %>% 
+viostrachina <- ggplot(sf5 %>% 
                filter(Year>2000,
                       ID !="Outer")%>% 
                  mutate(ID = str_replace(ID, "Extra", "GS")),
@@ -670,11 +653,146 @@ viostra <- ggplot(sf4 %>%
   theme(axis.text.x = element_text(angle = 90, 
                                    hjust = 1))+
   ylab("")+
-  xlab("Length (cm)")
-viostra
+  xlab("Length (cm)")+
+  coord_flip()
+
+viostra <- ggplot(sf5 %>% 
+               filter(Year>2000,
+                      ID !="Outer",
+                      vessel_nationality_code != "CHN")%>% 
+                 mutate(ID = str_replace(ID, "Extra", "GS")),
+             aes(x=length_total_cm, 
+                 y = as.factor(Year), 
+                 fill=ID))+
+  scale_fill_viridis_d(name="Strata",
+                       option="F")+
+  geom_violin(alpha=0.8,
+              color="NA")+
+  geom_boxplot(width=0.1,
+               outlier.shape = NA,
+               show.legend = FALSE,
+               alpha=0.1)+
+  geom_vline(xintercept = 3.6, color = "red")+
+  facet_wrap(.~ID, ncol=7) + 
+  theme_minimal()+
+  theme(legend.position="none")+
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1))+
+  ylab("")+
+  xlab("Length (cm)")+
+  coord_flip()
+
+
+
+ggarrange(viostrachina,
+          viostra,
+          ncol = 1)
 
 ```
 
+```{r}
+# Calculando datos con China
+sf5_means_with_china <- sf5 %>%
+  filter(Year > 2000, ID != "Outer") %>%
+  mutate(ID = str_replace(ID, "Extra", "GS"),
+         Data_Source = "With China") %>% # Etiqueta para identificar el origen
+  group_by(Year, ID, Data_Source) %>%
+  summarize(mean_length = mean(length_total_cm, na.rm = TRUE),
+            sd_length = sd(length_total_cm, na.rm = TRUE)) %>%
+  ungroup()
+
+# Calculando datos sin China
+sf5_means_no_china <- sf5 %>%
+  filter(Year > 2000, ID != "Outer", vessel_nationality_code != "CHN") %>%
+  mutate(ID = str_replace(ID, "Extra", "GS"),
+         Data_Source = "Without China") %>% # Etiqueta para identificar el origen
+  group_by(Year, ID, Data_Source) %>%
+  summarize(mean_length = mean(length_total_cm, na.rm = TRUE),
+            sd_length = sd(length_total_cm, na.rm = TRUE)) %>%
+  ungroup()
+
+# Combinando ambos conjuntos de datos
+sf5_combined <- bind_rows(sf5_means_with_china, sf5_means_no_china)
+
+# Gráfico combinado
+trend_combined <- ggplot(sf5_combined, aes(x = Year, 
+                                           y = mean_length, 
+                                           color = ID, 
+                                           linetype = Data_Source)) +
+  geom_line(size = 1.2) +
+  geom_point(aes(shape = Data_Source), size = 3) +
+  geom_errorbar(aes(ymin = mean_length - sd_length, 
+                    ymax = mean_length + sd_length),
+                width = 0.2, alpha = 0.5) +
+  scale_color_viridis_d(name = "Strata", option = "F") +
+  scale_linetype_manual(name = "Data Source", values = c("With China" = "solid", "Without China" = "dashed")) +
+  scale_shape_manual(name = "Data Source", values = c("With China" = 16, "Without China" = 17)) +
+  labs(x = "Year", y = "Mean Length (cm)",
+       title = "Trends in Mean Length by Strata (With and Without China)") +
+  theme_few() +
+  theme(legend.position = "bottom",
+        legend.box = "horizontal")
+
+# Mostrar el gráfico
+trend_combined
+
+# Mostrar los gráficos
+
+```
+test
+
+```{r}
+# Filtrando datos para asegurar el mismo rango de años
+paired_data <- sf5_combined %>% 
+  filter(Data_Source %in% c("With China", "Without China")) %>%
+  pivot_wider(names_from = Data_Source, values_from = mean_length) %>%
+  filter(!is.na(`With China`) & !is.na(`Without China`))
+```
+
+
+```{r}
+
+# Ajuste del modelo lineal mixto
+lmm <- lmer(mean_length ~ Data_Source + (1 | Year) + (1 | ID), data = sf5_combined)
+
+# Resumen del modelo
+summary(lmm)
+anova(lmm)
+
+# T-Test pareado
+# T-Test independiente
+independent_t_test <- t.test(mean_length ~ Data_Source, data = sf5_combined)
+print(independent_t_test)
+```
+
+color of nation without china
+
+```{r}
+color <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99')
+colnat <- ggplot() +
+  geom_sf(data = strata, fill=NA, col=2)+
+  geom_sf(data = coast2, colour="#636363", 
+          fill="white")+
+   geom_sf(data=ohbio6_conchina %>% 
+               filter(Year>2000,
+                      vessel_nationality_code == "CHN"),
+           aes(color = as.factor(Year))) +
+  #facet_wrap(~Year, ncol=10)+
+  scale_color_manual(values = color)+
+  theme(panel.background = element_rect(fill = 'aliceblue'),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())+
+  # ylim(-70, -60)+
+  # xlim(-70, -50)
+  # another kind projection
+  ylim(230000, 2220000)+
+  xlim(-3095349 , -1858911)+
+  #coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
+  coord_sf(crs = 6932)+
+  labs(title = "Operation by year by china Fleet")+
+  theme_few()
+colnat
+```
 maps length
 
 ```{r}
@@ -684,9 +802,8 @@ glstrata <- ggplot() +
                filter(Year>1999,
                       ID !="Outer") %>% 
              mutate(tapro_nivel =cut(na.omit(tapro),
-                   breaks = seq(2, 6, by = 0.5),
-                        labels = c("2-2.5", "2.5-3.0", "3.0-3.5", "3.5-4.0",
-                                   "4.0-4.5", "4.5-5.0", "5.0-5.5", "5.5-6.0"),
+                   breaks = seq(2, 6, by = 1),
+                        labels = c("2-3", "3-4", "4-5", "5-6"),
                         include.lowest = TRUE)),
            aes(fill = tapro_nivel), 
            color=NA) +

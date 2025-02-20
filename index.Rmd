@@ -1,14 +1,15 @@
 ---
-title: "Krill Length 48.1 Correlation Analysis with Environmental Drivers"
-subtitle: "Alternative Analysis to incorporate in Krill Stock Assessment Model 48.1 SubArea"
-author: "Mardones, M; Watters, G.; Cárdenas, C."
+title: "Supporting Information 2"
+subtitle: "Spatial and temporal variability in the intrinsic productivity of Antarctic krill (Euphausia superba) along the Western Antarctic Peninsula under environmental and life history scenarios"
+author: "Mardones, M; Jarvis Mason, E.T.;  Santa Cruz, F.; Watters, G.; Cárdenas, C.A"
 date:  "`r format(Sys.time(), '%d %B, %Y')`"
 bibliography: seaice.bib
 csl: apa.csl
 link-citations: yes
 linkcolor: blue
 output:
-  html_document:
+  bookdown::html_document2:
+    fig_caption: yes
     keep_md: true
     toc: true
     toc_deep: 3
@@ -21,6 +22,7 @@ output:
     html-math-method: katex
     self-contained: true
     code-tools: true
+    number_sections: false
 editor_options: 
   markdown: 
     wrap: 72
@@ -80,15 +82,14 @@ library(tinytable)
 
 The following document intends to carry out a complementary
 methodological analysis to correlate environmental variables with the
-population dynamics of krill (*Euphausia superba*), in this case, with a
-biological component like lengths from fishery monitoring.
+population dynamics of krill (*Euphausia superba*), in this case, in spatial complexity and with a biological component like lengths from fishery monitoring.
 
 # Hypothesis
 
-The primary inquiry pertains to the environmental effects of distinct
+The primary inquiry pertains to the environmental and  effects of distinct
 physical and oceanographic factors in the Southern Ocean on the krill
 population. Our aim is to examine the population structure via krill
-length component and determine whether any changes were driven by
+length component from fishery and determine whether any changes were driven by
 environmental factors across any of its dimensions.
 
 # Objective
@@ -100,8 +101,16 @@ assessment process. Similar work in @Wang2021 but with a longest fishery
 history.
 
 
-
 # Methodology
+
+## Spatial heterogeneity 
+
+The Figure 1 (S2 Fig 1 now) illustrates the spatial heterogeneity of key environmental and population variables across different management units (BS, EI, GS, JOIN, SSWI) in the Antarctic Peninsula, where krill populations are distributed. Biomass and catch trends show substantial variability between strata, with BS and GS exhibiting the highest biomass estimates, whereas JOIN and SSWI display comparatively lower values. Catch levels also differ significantly, with BS and GS experiencing the most intensive exploitation, while SSWI and JOIN have minimal catch records.  Environmental variables further highlight this heterogeneity. Sea surface temperature (SST) trends vary among strata, with GS and JOIN exhibiting a slight warming trend over time, while BS and EI remain relatively stable. Sea ice cover differs substantially, with GS showing consistently high coverage, whereas JOIN presents greater fluctuations. Chlorophyll-a (Chl-a) levels, a proxy for primary productivity, also vary across regions, with BS and GS showing declining trends, while EI and SSWI remain relatively stable at lower concentrations.  Given these spatial differences in both krill population metrics and environmental conditions, it is essential to analyze and estimate SPR at this local scale. The observed heterogeneity supports the need for spatially explicit management, as krill population dynamics are likely influenced by regional environmental drivers. By incorporating SPR analysis at this resolution, we can provide a spatial explicit framework for sustainable krill management, ensuring that conservation efforts align with local population and ecosystem characteristics.
+
+```{r}
+
+```
+
 
 ## Length structure krill 48 Statistical Subarea
 
@@ -111,144 +120,17 @@ and years. To do this, we will explore the biological data and prepare
 the output to add it into stock assessment integrate model
 [@Methot2013].
 
-the idea is to correlate mean lengths with SIC.
 
-## Data exploratory analysis
+## Models
 
-The object `ohbio2` come from data exploration analysis in data request
-CCAMLR data. This objetc have bio information from krill.
 
-```{r  echo=FALSE}
-#datos entregados por secretaria de CCMLAR
-metadata <- load("~/DOCAS/Data/565_C1_KRI_2021-10-01/DATA_PRODUCT_565.RData")
-# Data procesada por MMardones
-#ohbio <- load("DataLengthKrill.RData")
-#ohbio
-#metadata
-#son lo mismo
-```
-
+To evaluate the spatial and temporal variability of krill length and its relationship with environmental covariates, we applied a series of regression models, including generalized linear models (GLMs) and linear mixed-effects models (LMMs). Initial GLMs were constructed to assess the fixed effects of year (ANO), spatial strata (ID), sea ice concentration, chlorophyll-a (Chla), and sea surface temperature (TSM) on krill length. To account for the hierarchical structure of the data, we incorporated random intercepts for year (ANO) and, in some models, for spatial strata (ID) using the `lme4` package in R. Interactions between ID and ANO were tested to explore whether temporal trends in krill length differed across spatial units. Model selection was based on the Akaike Information Criterion (AIC) and residual deviance, with lower values indicating better model fit. Variance inflation factors (VIF) were calculated to check for multicollinearity among environmental predictors, and when necessary, covariates were standardized or imputed to handle missing data. The inclusion of random effects allowed us to capture unexplained annual variability while accounting for spatial heterogeneity in krill growth patterns. Visualization of model predictions and marginal effects was conducted using the `ggeffects` and `sjPlot` packages, providing insights into how krill length dynamics respond to environmental and spatial drivers over time.  
 ```{r}
-#cargo objeto
-meta <- get("METADATA")
-c1 <- get("C1")
-ohbio <- get("OBS_HAUL_BIOLOGY")
-names(ohbio)
-dim(c1)
-dim(ohbio)
-```
-
-
-Join data set with master as `c1` set. This join is trought
-`obs_haul_id` variable to get geoposition variables
-
-```{r warning=FALSE}
-ohbio2 <- left_join(c1, ohbio, by="obs_haul_id")
-dim(ohbio2)
-```
-
-Firsts glance. Test how many register have by year. In this case,
-`length_total_cm` by season ccamlr. Same exercise in date period
-`date_catchperiod_start` to separate dates.
-
-```{r}
-ohbio3 <- ohbio2 %>%
-  mutate(Year = year(date_catchperiod_start),
-         Month = month(date_catchperiod_start),
-         Day = day(date_catchperiod_start))
-```
-
-Save data further analysis
-```{r}
-length481 <-ohbio3 %>% 
-  dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47, 43) %>% 
-  filter(asd_code=="481")
-summary(length481)  
-#save(length481, file = "length481.RData")
-```
-
-```{r}
-names(ohbio3)
-ohbio4 <- ohbio3 %>% 
-dplyr::select(7, 9, 11, 12, 14, 24, 25, 29, 42, 44, 46, 47)
-names(ohbio4)
+#Load data procesed
+datapost_LBSPR <- read_csv("datapost_LBSPR.csv")
 
 ```
 
-```{r warning=FALSE, message=FALSE}
-coutlength <-ohbio4 %>% 
-  drop_na(length_total_cm) %>% 
-  dplyr::group_by(Year, Month, asd_code) %>%
-  dplyr::summarise(avg=mean(length_total_cm))
-#kableExtra::kable(coutlength, format = "html")
-```
-
-Mean length in time series by Subarea.
-
-```{r, fig.align="center", warning=FALSE}
-pmea <- ggplot(coutlength, 
-               aes(Month,avg))+
-    geom_point(show.legend = T) +
-    stat_smooth(method= "glm", colour='#253494')+
-    scale_size(range = c(-4,8)) +
-    theme_few()+ 
-    facet_grid(asd_code~Year)+
-    scale_x_continuous(breaks = seq(from = 1, to = 12, by = 3))+
-    #scale_y_discrete(breaks = seq(from = 1, to = 13, by = 1))+
-    theme(axis.text.x = element_text(angle = 90))+
-    guides(fill = guide_legend(reverse=F))+
-    scale_fill_viridis_c(option="E")+
-    ylim(3,6)+
-    ylab("") +
-    xlab("") +
-    ggtitle("Lenght Mean Krill fishery")
-pmea
-```
-Some features of data set length structures
-
-```{r}
-table(ohbio4$gear_type) %>%
-  kbl() %>%
-  kable_styling()
-
-table(ohbio2$trawl_technique)%>%
-  kbl() %>%
-  kable_styling()
-```
-
-## Plots
-
-Filter data regarding to previous glances. Follow with a quick glimpse
-to all 48 subarea length composition from monitoring fisheries.
-
-```{r message=F, warning=F}
-jz <- ggplot(ohbio4 %>% 
-               dplyr::filter(Year>2000),
-             aes(x=length_total_cm, 
-                 y = as.factor(Year), 
-                 fill=asd_code))+
-  #geom_joy(alpha=0.9) +
-  geom_density_ridges(stat = "binline", bins = 50, 
-                      scale = 1.8, 
-                      draw_baseline = FALSE,
-                      alpha=0.8)+
-  facet_wrap(.~asd_code, ncol=3) +   
-  geom_vline(xintercept = 3.6, color = "red")+
-  scale_x_continuous(breaks = seq(from = 1, to = 10, 
-                                  by = 1))+
-  scale_y_discrete(breaks = seq(from = 2000, 
-                                to = 2020, by = 1))+
-  scale_fill_viridis_d(name="SubArea",
-                       option="F")+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, 
-                                   hjust = 1),
-        legend.position = "none")+
-  xlim(0,10)+
-  xlab("Longitud (cm.)")+
-  ylab("")
-jz
-```
 
 Another way to watch this data is regarding thecnics trawl like Figure
 \@ref(fig:lenthtrwal).
@@ -489,23 +371,7 @@ strataclip=st_transform(strata,
 
 
 ```
-Map whole antactic
-```{r}
-# y testeo el mapa
-antar <- ggplot()+
-  geom_sf(data = coast2, 
-          colour="black", 
-          fill=NA)+
-  geom_sf(data= suba1aa, 
-          colour="red",
-          fill=NA)+
-  scale_fill_viridis_d(option = "E")+
-  # coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
-  coord_sf(crs = 6932)+
-  theme_few()+
-  theme(legend.position = "none")
-antar
-```
+
 
 ```{r maptest, fig.cap="Strata Maps in 48.1"}
 # y testeo el mapa
@@ -1356,6 +1222,121 @@ mean(env_ranef$cellid[, 1])
 
 report(env1m)
 ```
+
+
+```{r}
+library(lme4)
+library(sjPlot)
+
+env1m_Chla <- lmer(LENGTH ~ ANO + Chla + (1|ID), data = data_large2)
+env1m_tsm  <- lmer(LENGTH ~ ANO + tsm + (1|ID), data = data_large2)
+
+env1 <- glm(LENGTH ~ ANO,
+            data = data_large2)
+env2 <- glm(LENGTH ~ ANO+
+               seaice,
+             data = data_large2)
+env3 <- glm(LENGTH ~ ANO+
+               seaice+
+               tsm,
+             data = data_large2)
+env4 <- glm(LENGTH ~ ID + 
+              seaice +
+              Chla + 
+              tsm ,
+            data = data_large2)
+#spatial component
+env5 <- glm(lepro ~ Year + 
+              meansic2 +
+              meanchl2 + 
+              meantsm2 +
+              cellid,
+            data = envlen2)
+
+env1m <- lmer(LENGTH ~ ID + 
+                Chla + 
+                seaice + 
+                 (1|ANO), 
+              data = data_large2)
+
+pre <- plot_model(env1m,type = "re", 
+                  facet.grid=TRUE, 
+                  free.scale = FALSE, 
+                  title = NULL, 
+                  vline.color = "darkgrey",
+                  sort.est = TRUE,
+                  colors = "Set1",
+                  show.data = TRUE,
+                  jitter = 0.2,
+                  terms = "Days")+
+  theme_minimal()
+
+pest <- plot_model(env1m,type = "est", 
+                   facet.grid=FALSE, 
+                   free.scale = FALSE, 
+                   title = NULL, 
+                   vline.color = "darkgrey",
+                   sort.est = TRUE,
+                   colors = "Set2",
+                   show.data = TRUE,
+                   jitter = 0.2)+
+  theme_minimal()
+
+ggarrange(pre, pest, ncol = 2)
+
+
+data_large4<- na.omit(data_large2)
+data_large4 <- data_large4 %>%
+  mutate(across(c(ANO, Chla, seaice, tsm), scale))
+
+library(lme4)
+model1 <- lmer(LENGTH ~ ID + ANO + Chla + seaice + tsm + (1|ANO), data = data_large4)
+summary(model1)
+
+
+model2 <- lmer(LENGTH ~ ANO + Chla + seaice + tsm + (1|ID) + (1|ANO), data = data_large4)
+summary(model2)
+
+
+tab_model(model1, show.re.var = TRUE)
+
+library(ggplot2)
+library(ggeffects)
+
+# Efecto de Año
+plot(ggpredict(model1, terms = "ANO"))
+
+# Efecto de ID
+plot(ggpredict(model1, terms = "ID"))
+
+# Efecto de Chla
+plot(ggpredict(model1, terms = "Chla"))
+
+model_null <- lm(LENGTH ~ ANO + Chla + seaice + tsm, data = data_large4) # sin efectos aleatorios
+anova(model1) # Comparación de modelos
+
+plot(model1)  # Residuos vs valores ajustados
+qqnorm(resid(model2))
+qqline(resid(model2))  # Normalidad de residuos
+
+
+model3 <- lmer(LENGTH_P75 ~ ID + ANO + Chla * tsm + seaice + (1|ANO), data = data_large4)
+summary(model3)
+
+pest <- plot_model(model3,type = "est", 
+                   facet.grid=FALSE, 
+                   free.scale = FALSE, 
+                   title = NULL, 
+                   vline.color = "darkgrey",
+                   sort.est = TRUE,
+                   colors = "Set2",
+                   show.data = TRUE,
+                   jitter = 0.2)+
+  theme_minimal()
+
+
+```
+
 
 # Conclusion
 
