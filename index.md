@@ -220,7 +220,7 @@ $\begin{aligned} r = 1- \frac{6\sum_{i=1}^n D_{i}^n}{n (n^2 - 1)}\end{aligned}$
 
 ``` r
 data_corr <- data_large2 %>% 
-  dplyr::select(-ID, -ANO) %>%  # Elimina las variables categóricas
+  dplyr::select(-ID, -ANO, - SPR, -`SE SPR`) %>%  # Elimina las variables categóricas
   cor(method = "pearson", 
                  use = "complete.obs")  # Calcula la correlación excluyendo NA
 ```
@@ -364,7 +364,6 @@ mod5_P75 <- lmer(LENGTH_P75 ~ ID + seaice + tsm * Chla + (1 | ANO),
 
 
 ``` r
-# Comparación de modelos
 model_comparison <- compare_performance(mod1_L, 
                                         mod2_L, 
                                         mod3_L,
@@ -374,10 +373,16 @@ model_comparison <- compare_performance(mod1_L,
                                         rank = TRUE,
                                         verbose = FALSE)
 
-# Convertir a tabla y formatear con kable
 model_comparison %>%
-  kable(format = "html", digits = 3, align = "c", caption = "Model Performance Comparison") %>%
-  kable_styling(full_width = TRUE, bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  kable(format = "html", 
+        digits = 3, 
+        align = "c", 
+        caption = "Model Performance Comparison") %>%
+  kable_styling(full_width = TRUE, 
+                bootstrap_options = c("striped", 
+                                      "hover", 
+                                      "condensed",
+                                      "responsive")) %>%
   scroll_box(width = "100%", height = "400px")
 ```
 

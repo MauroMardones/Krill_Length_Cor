@@ -189,7 +189,7 @@ $\begin{aligned} r = 1- \frac{6\sum_{i=1}^n D_{i}^n}{n (n^2 - 1)}\end{aligned}$
 
 ```{r}
 data_corr <- data_large2 %>% 
-  dplyr::select(-ID, -ANO) %>%  # Elimina las variables categóricas
+  dplyr::select(-ID, -ANO, - SPR, -`SE SPR`) %>%  # Elimina las variables categóricas
   cor(method = "pearson", 
                  use = "complete.obs")  # Calcula la correlación excluyendo NA
 ```

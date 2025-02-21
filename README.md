@@ -21,7 +21,7 @@ This analysis was conducted in **R**, using the `lme4` package for mixed-effects
 
 ## **Repository Structure**  
 ```
-├── data/               # Raw and processed data files  
+├── data/               # Raw and processed data files (upon request)
 ├── scripts/            # R scripts for data processing and modeling  
 ├── index_files/        # figures and Outputs from the analysis  
 ├── index.Rmd           # R Markdown file for the report  
