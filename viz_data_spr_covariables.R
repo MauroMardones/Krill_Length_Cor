@@ -322,10 +322,7 @@ ggplot(data_large2, aes(x = CATCH, y = SPR, color = as.factor(ANO))) +
 
 
 
-ggpairs(data_large2 %>% 
-          dplyr::select(ID, ANO, LENGTH, CATCH, SPR, Chla, seaice, tsm), 
-        mapping = aes(color = ID)) + 
-  theme_minimal()
+
 
 ggplot(data_large2, aes(x = as.factor(ANO), y = LENGTH, fill = ID)) +
   geom_boxplot(alpha = 0.7) +

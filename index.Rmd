@@ -76,6 +76,7 @@ library(GGally)
 library(CCAMLRGIS)
 library(modelsummary)
 library(tinytable)
+library(ggcorrplot)
 ```
 
 # Background
@@ -94,7 +95,8 @@ environmental factors across any of its dimensions.
 
 # Objective
 
-Once the correlation and effects on the population and/or fishing
+The main idea of this analysis is to empirically verify the influence on the population dynamics of krill measured through length variability, which gives indications of growth variations on the temporal and spatial scale.
+Also, once the correlation and effects on the population and/or fishing
 indicators on krill have been verified, this analysis aims to have a
 time series of the environmental variable to incorporate into the stock
 assessment process. Similar work in @Wang2021 but with a longest fishery
@@ -105,849 +107,73 @@ history.
 
 ## Spatial heterogeneity 
 
-The Figure 1 (S2 Fig 1 now) illustrates the spatial heterogeneity of key environmental and population variables across different management units (BS, EI, GS, JOIN, SSWI) in the Antarctic Peninsula, where krill populations are distributed. Biomass and catch trends show substantial variability between strata, with BS and GS exhibiting the highest biomass estimates, whereas JOIN and SSWI display comparatively lower values. Catch levels also differ significantly, with BS and GS experiencing the most intensive exploitation, while SSWI and JOIN have minimal catch records.  Environmental variables further highlight this heterogeneity. Sea surface temperature (SST) trends vary among strata, with GS and JOIN exhibiting a slight warming trend over time, while BS and EI remain relatively stable. Sea ice cover differs substantially, with GS showing consistently high coverage, whereas JOIN presents greater fluctuations. Chlorophyll-a (Chl-a) levels, a proxy for primary productivity, also vary across regions, with BS and GS showing declining trends, while EI and SSWI remain relatively stable at lower concentrations.  Given these spatial differences in both krill population metrics and environmental conditions, it is essential to analyze and estimate SPR at this local scale. The observed heterogeneity supports the need for spatially explicit management, as krill population dynamics are likely influenced by regional environmental drivers. By incorporating SPR analysis at this resolution, we can provide a spatial explicit framework for sustainable krill management, ensuring that conservation efforts align with local population and ecosystem characteristics.
+Figure \@ref(fig:Figure1) (S2 Fig 1 now) illustrates the spatial heterogeneity of key environmental and population variables across different management units (BS, EI, GS, JOIN, SSWI) in the Antarctic Peninsula, where krill populations are distributed. Biomass and catch trends show substantial variability between strata, with BS and GS exhibiting the highest biomass estimates, whereas JOIN and SSWI display comparatively lower values. Catch levels also differ significantly, with BS and GS experiencing the most intensive exploitation, while SSWI and JOIN have minimal catch records.  Environmental variables further highlight this heterogeneity. Sea surface temperature (SST) trends vary among strata, with GS and JOIN exhibiting a slight warming trend over time, while BS and EI remain relatively stable. Sea ice cover differs substantially, with GS showing consistently high coverage, whereas JOIN presents greater fluctuations. Chlorophyll-a (Chl-a) levels, a proxy for primary productivity, also vary across regions, with BS and GS showing declining trends, while EI and SSWI remain relatively stable at lower concentrations.  Given these spatial differences in both krill population metrics and environmental conditions, it is essential to analyze and estimate SPR at this local scale. The observed heterogeneity supports the need for spatially explicit management, as krill population dynamics are likely influenced by regional environmental drivers. By incorporating SPR analysis at this resolution, we can provide a spatial explicit framework for sustainable krill management, ensuring that conservation efforts align with local population and ecosystem characteristics.
 
-```{r}
-
+```{r Figure1, echo=FALSE, out.width='90%', fig.cap="Spatial heterogeneity of krill biomass, catch, and environmental variables across management units in the Antarctic Peninsula (BS, EI, GS, JOIN, SSWI)"}
+knitr::include_graphics('index_files/figure-html/var_env.png')
 ```
 
+## Length composition data as indicator of krill dynamics
 
-## Length structure krill 48 Statistical Subarea
-
-Another important piece of information for a stock evaluation refers to
-the biological components such as average sizes and weights across areas
-and years. To do this, we will explore the biological data and prepare
-the output to add it into stock assessment integrate model
-[@Methot2013].
-
-
-## Models
-
-
-To evaluate the spatial and temporal variability of krill length and its relationship with environmental covariates, we applied a series of regression models, including generalized linear models (GLMs) and linear mixed-effects models (LMMs). Initial GLMs were constructed to assess the fixed effects of year (ANO), spatial strata (ID), sea ice concentration, chlorophyll-a (Chla), and sea surface temperature (TSM) on krill length. To account for the hierarchical structure of the data, we incorporated random intercepts for year (ANO) and, in some models, for spatial strata (ID) using the `lme4` package in R. Interactions between ID and ANO were tested to explore whether temporal trends in krill length differed across spatial units. Model selection was based on the Akaike Information Criterion (AIC) and residual deviance, with lower values indicating better model fit. Variance inflation factors (VIF) were calculated to check for multicollinearity among environmental predictors, and when necessary, covariates were standardized or imputed to handle missing data. The inclusion of random effects allowed us to capture unexplained annual variability while accounting for spatial heterogeneity in krill growth patterns. Visualization of model predictions and marginal effects was conducted using the `ggeffects` and `sjPlot` packages, providing insights into how krill length dynamics respond to environmental and spatial drivers over time.  
 ```{r}
 #Load data procesed
-datapost_LBSPR <- read_csv("datapost_LBSPR.csv")
-
+data_large2 <- read_csv("data/datapost_LBSPR.csv")
 ```
-
-
-Another way to watch this data is regarding thecnics trawl like Figure
-\@ref(fig:lenthtrwal).
-
-```{r lenthtrwal, message=F, warning=F, fig.cap="Krill length by Trawl technique"}
-
-trwal <- ggplot(ohbio4 %>% 
-               filter(Year>2000),
-             aes(x=length_total_cm, 
-                 y = as.factor(Year),
-                 fill= trawl_technique))+
-  #geom_joy(alpha=0.9) +
-  geom_density_ridges(stat = "binline", bins = 50, 
-                      scale = 1.8, 
-                      draw_baseline = FALSE,
-                      alpha=0.5)+
-  facet_wrap(.~asd_code, ncol=3) +   
-  geom_vline(xintercept = 3.6, color = "red")+
-  scale_x_continuous(breaks = seq(from = 1, to = 10, 
-                                  by = 1))+
-  scale_y_discrete(breaks = seq(from = 2000, 
-                                to = 2020, by = 1))+
-  scale_fill_viridis_d(name="Trawl Technique",
-                       option="F")+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, 
-                                   hjust = 1))+
-  xlim(0,10)+
-  xlab("Longitud (cm.)")+
-  ylab("")
-trwal
-```
-
-Same plot by Sub Area and month trought year. With this kind of plot, we
-can see the recruit power interannually (Figure\@ref(fig:lengthmonth).
-
-```{r lengthmonth, message=F, warning=F, fig.cap="Length by Month and  SubArea"}
-ymasd <- ggplot(ohbio4 %>% 
-               filter(Year>2000),
-             aes(x=length_total_cm, 
-                 y = as.factor(Month),
-                 fill=asd_code))+
-  #geom_joy(alpha=0.9) +
-  geom_density_ridges(stat = "binline", bins = 50, 
-                      scale = 1.5, 
-                      draw_baseline = FALSE,
-                      alpha=0.5)+
-  facet_wrap(.~season_ccamlr, ncol=5) +   
-  geom_vline(xintercept = 3.6, color = "red")+
-  scale_x_continuous(breaks = seq(from = 1, to = 10, 
-                                  by = 1))+
-  scale_y_discrete(breaks = seq(from = 1, 
-                                to = 12, by = 1))+
-  scale_fill_viridis_d(name="SubArea",
-                       option="F")+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, 
-                                   hjust = 1))+
-  xlim(0,10)+
-  xlab("Longitud (cm.)")+
-  ylab("")
-ymasd
-```
-
-Just 48.1 SubArea plot
-
-```{r  eval=FALSE, fig.align="center", message=F, warning=F}
-yma481 <- ggplot(ohbio4 %>% 
-               filter(Year>2000,
-                      asd_code==481),
-             aes(x=length_total_cm, 
-                 y = as.factor(Month),
-                 fill=asd_code))+
-  #geom_joy(alpha=0.9) +
-  geom_density_ridges(stat = "binline", bins = 50, 
-                      scale = 1.5, 
-                      draw_baseline = FALSE,
-                      alpha=0.5)+
-  facet_wrap(.~Year, ncol=5) +   
-  geom_vline(xintercept = 3.6, color = "red")+
-  scale_x_continuous(breaks = seq(from = 1, to = 10, 
-                                  by = 1))+
-  scale_y_discrete(breaks = seq(from = 1, 
-                                to = 12, by = 1))+
-  scale_fill_viridis_d(name="SubArea",
-                       option="F")+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, 
-                                   hjust = 1))+
-  xlim(0,10)+
-  xlab("Longitud (cm.)")+
-  ylab("")
-yma481
-```
-
-
-Violin plot
 
 ```{r}
-
-vio481 <- ggplot(ohbio4 %>% 
-               filter(Year>2000),
-             aes(x=as.factor(Year), 
-                 y = length_total_cm))+
-  geom_violin(alpha=0.5)+
-  geom_boxplot(width=0.1,
-               outlier.shape = NA)+
-  facet_wrap(~asd_code, ncol = 1)+
-  theme_few()+
-  theme(axis.text.x = element_text(angle = 90, 
-                                   hjust = 1))+
-  xlab("")+
-  ylab("Length (cm.)")
-vio481
-
+glimpse(data_large2)
 ```
 
-
-
-## Mean Length
-
-Recruit estimate (% Low Recruit length) [@Perry2020]
-
-Un diaggrama de caja para el porcentage de individuos bajo talla (3.6
-mmm.)
-
-```{r warning=FALSE}
-box <- ggplot(ohbio4) +
-  geom_boxplot(aes(length_total_cm, 
-                   group=season_ccamlr), 
-               alpha=0.3,
-               fill=3)+
-  geom_vline(xintercept = 3.6, color = "red")+
-  xlim(0, 7)+
-  coord_flip()+
-  facet_wrap(~asd_code, ncol=1)+
-  theme_bw()+
-  labs(x="% Below Recruit length (3.6 mm.)",
-       x="")
-hi <- ggplot(ohbio4)+
-  geom_histogram(aes(y=length_total_cm), 
-                 fill=3,
-                 alpha=0.3,
-                 color="black")+
-  coord_flip()+
-  theme_bw()+
-  ylim(0,10)
-
-ggarrange(box, hi, ncol = 2)
-  
-```
-## Calculate Index Recruit
+Figure \@ref(fig:Figure2) consists of two side-by-side scatterplots, each displaying trends in krill length over time (years) for different spatial strata (ID).
 
 ```{r}
-inderec <- ohbio4 %>% 
-  drop_na(length_total_cm) %>% 
-  dplyr::group_by(Year, asd_code) %>% 
-  dplyr::mutate(prolen = length_total_cm - 4.16) %>% 
-  dplyr::mutate(prolen2 = prolen*1) %>% 
-  dplyr::summarize(prolen3 =mean(prolen2))
-# calcuo el error sd
+data_filtered <- data_large2 %>%
+  filter(!is.na(LENGTH), 
+         !is.na(LENGTH_P75))
 
-limite_superior <- mean(inderec$prolen3) + 
-  1.96 * sd(inderec$prolen3) / sqrt(inderec$prolen3)
-limite_inferior <- mean(inderec$prolen3) - 
-  1.96 * sd(inderec$prolen3) / sqrt(inderec$prolen3)
+length <- ggplot(data_filtered, 
+                 aes(x = ANO, y = LENGTH, color = ID)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "",
+       x = "",
+       y = "Mean Krill Length (cm)") +
+  theme_minimal() +
+  theme(legend.position = "bottom")+
+  scale_color_viridis_d(option="F")+
+  ylim(2,6)
 
-
-```
-grafico de barras para el indice a traves de los años
-
-
-```{r}
-inderec$colour <- ifelse(inderec$prolen3 < 0, "negative","positive")
-
-indexplot <- ggplot(inderec %>% 
-                      filter(asd_code == "481"),
-                    aes(rev(Year),prolen3))+
-  geom_bar(stat="identity",
-           position="identity",
-           aes(fill = colour))+
-  scale_fill_manual(values=c(negative="black",
-                             positive="firebrick1"),
-                    name="")+
-  scale_x_continuous(breaks = seq(from = 2000, 
-                                to = 2020, by = 1))+
-  facet_wrap(.~asd_code)+
-  geom_hline(yintercept=0,
-             lwd=0.4)+
-  theme_few()+
-  labs(y="IRK",
-       x="",
-       title = "Index Recruit Krill 48.1 SubArea")+
-  coord_flip()
-indexplot
-```
-(Probar datos con RaadTools library [@Raadtools2022])
-
-## Maps length data
-
-First thing is get different rater layer to join krill data length
-according different porpoises.
-
-```{r raster}
-# Cargo linea de costa
-coast <- load_Coastline()
-coast1<- st_as_sf(coast) 
-coast2 = st_transform(coast1, "+proj=latlong +ellps=WGS84")
-# con SSMU
-ssmu <- load_SSMUs()
-ssmu481 <- subset(ssmu[c(2,3,4,5,6,7,17),])
-ssmu481a <- st_as_sf(ssmu481) 
-ssmu481aa = st_transform(ssmu481a, "+proj=latlong +ellps=WGS84")
-
-# con Statistical Areas con foco en 48.1
-suba <- load_ASDs()
-suba1 <- subset(suba[(3),])
-suba1a<- st_as_sf(suba1) 
-suba1aa = st_transform(suba1a, "+proj=latlong +ellps=WGS84")
-
-
-# Uso las agrupaciones de DMP1
-dmp1 <- st_read("~/DOCAS/Mapas/Antarctic_SHPfiles/D1MPA-model-2019.shp",
-                quiet=T)
-dmp1=st_transform(dmp1, 6932)
-
-# Uso las agrupaciones de Strata
-strata <- st_read("~/DOCAS/Mapas/Antarctic_SHPfiles/Strata.shp",
-                quiet=T)
-strata=st_transform(strata,
-                    "+proj=latlong +ellps=WGS84")
-
-# Uso las agrupaciones de Strata Lucas HW
-strataclip <- st_read("~/DOCAS/Data/WAP-Heatwaves/peninsula_correct.shp",
-                quiet=T)
-strataclip=st_transform(strata, 
-                        "+proj=latlong +ellps=WGS84")
-
-
+length75 <- ggplot(data_filtered, 
+                   aes(x = ANO, y = LENGTH_P75, color = ID)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) +  
+  labs(title = "",
+       x = "Year",
+       y = "75th Percentile Krill Length") +
+  theme_minimal() +
+  theme(legend.position = "bottom")+
+  scale_color_viridis_d(option="F")+
+  ylim(2,6)
 ```
 
 
-```{r maptest, fig.cap="Strata Maps in 48.1"}
-# y testeo el mapa
-ssmap <- ggplot()+
-  geom_sf(data = strata %>%
-           filter(ID != "Outer"), 
-          aes(fill=ID, 
-              alpha=0.3))+
-  geom_text_repel(data = strata %>% 
-            filter(ID != "Outer"), 
-            aes(x = Labx, y = Laby, 
-                label = ID), 
-            min.segment.length = 0,
-                             box.padding = 2,
-                             max.overlaps = 10)+
-  geom_sf(data = coast2, colour="black", fill=NA)+
-  geom_sf(data= suba1aa, 
-          colour="red",
-          fill=NA)+
-  scale_fill_viridis_d(option = "F")+
-  ylim(230000, 2220000)+
-  xlim(-3095349 , -1858911)+
-  # coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
-  coord_sf(crs = 6932)+
-  theme_bw()+
-  theme(legend.position = "none")
-ssmap
-```
-
-## Grouping Length data into Grid
-
-### SSMU 48.1 CCAMLR
-
-```{r ssmu1}
-names(ohbio4)
-ohbio5 <- ohbio4 %>% 
-  filter(asd_code==481) %>% 
-  dplyr::select(6, 7, 8, 9, 10, 11, 12) 
-ohbio6 <- st_as_sf(ohbio5 %>% 
-                     drop_na(latitude_set_end), 
-                   coords = c("longitude_set_end", 
-                              "latitude_set_end"),  
-                  crs = "+proj=latlong +ellps=WGS84")
-```
-
-This grid has the same characteristics as the environmental data grids
-that will be called up later. This grid is 1x0.5 degrees which allows a
-clear visualization of the processes, whether biological and/or
-environmental.
-
-```{r gri}
-
-Grid<- suba1aa  %>% #pm481 es el plot base original linea 481
-  sf::st_make_grid(cellsize = c(1,0.5)) %>% # para que quede cuadrada
-  sf::st_cast("MULTIPOLYGON") %>%
-  sf::st_sf()  %>%  # objeto en spatial feature
-  dplyr::mutate(cellid = row_number()) 
-
-# Clean the input data by removing duplicate vertices and making the object topologically valid
-grid3 <- st_make_valid(Grid)
-
-# Corto la grilla dentro de las SSMU
-gridcrop1 <- tmaptools::crop_shape(grid3, 
-                                   suba1aa,
-                                   polygon = TRUE)
-
-# the first object drives the output geometry
-grilen <- grid3 %>%
-  st_join(ohbio6) %>% 
-  group_by(cellid)
-
-names(grilen)
-```
-
-Test lentgh mean map by Year
-
-```{r plogri}
-grilen3 <- grilen %>%
-  drop_na(length_total_cm) %>% 
-  dplyr::group_by(cellid,Year) %>% 
-  dplyr::summarise(lepro=mean(length_total_cm))
+```{r Figure2, out.width='100%', fig.cap="Lenght mean and 75th percentile between year and strata."}
+ggarrange(length,
+          length75,
+          ncol=2)
 ```
 
 
-solo la grilla
+There is spatial variation in krill length trends across different strata, with some areas showing an increase in krill length over time, while others remain stable or decrease. The differences between the mean and the 75th percentile length suggest potential changes in krill population structure across strata. This visualization helps assess how krill size dynamics vary over time and across different spatial regions.
 
-```{r}
-glvoid <- ggplot() +
-  geom_sf(data = coast2, colour="black", fill=NA)+
-  geom_sf(data = gridcrop1, colour="black", fill=NA)+
-  geom_sf(data= suba1aa, fill=NA, col="red")+
-  theme(panel.background = element_rect(fill = 'aliceblue'),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())+
-   ylim(230000, 2220000)+
-  xlim(-3095349 , -1858911)+
-  # coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
-  coord_sf(crs = 6932)+
-  scale_alpha(guide="none")+
-  theme_bw()
-glvoid
-```
 
 
-```{r plogri2}
-gl <- ggplot() +
-   geom_sf(data=grilen3,
-           aes(fill = lepro), 
-           alpha=0.7, color=NA) +
-  scale_fill_viridis_b(option="G",
-                       name="Krill Length Fishery (cm.)",
-                       breaks = seq(0,8,1),
-                       direction=-1)+
-  geom_sf(data = suba1aa, fill=NA, col=2)+
-  geom_sf(data = coast2, colour="black", fill="grey")+
-  facet_wrap(~Year, ncol=6)+
-  theme(panel.background = element_rect(fill = 'aliceblue'),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())+
-  # ylim(-70, -60)+
-  # xlim(-70, -50)
-  # another kind projection
-  #coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
-  ylim(230000, 2220000)+
-  xlim(-3095349 , -1858911)+
-  
-  coord_sf(crs = 6932)
-gl
-```
+## Test Correlation
 
-
-###  STRATA
-
-Length composition by Strata CCAMLR to visualization first. First step is group data into to poligons strata.
-
-```{r wranlingdata}
-class(ohbio6)
-dim(ohbio6)
-glimpse(ohbio6)
-
-class(strata)
-glimpse(strata)
-dim(strata)
-
-
-conteo <- sf4 %>% 
-  group_by(ID) %>% 
-  count()
-
-ohbiopro <- ohbio6 %>%
-  dplyr::group_by(gear_type, Year, Month, geometry) %>% 
-  dplyr::summarize(tapro = mean(length_total_cm))
-
-# comoprobar si tengo datos duplicados
-strata2 <- st_make_valid(strata)
-ohbio62 <- st_make_valid(ohbio6)
-
-
-
-sf3 <- st_join(strata2, ohbiopro)
-sf4 <- st_join(strata2, ohbio6)
-dim(sf4)
-dim(sf3)
-```
-
-
-```{r saveda, eval=FALSE}
-save("sf4", file = "sf4.RData")
-save("sf3", file = "sf3.RData")
-load("~/DOCAS/Data/Krill_Length_Cor/sf4.RData")
-```
-
-
-scattter plot lenght data
-```{r warning=F}
-lentraplot <- ggplot(sf4 %>% 
-                   filter(Year>2000,
-                      ID !="Outer"), 
-               aes(Year, tapro,
-               fill=Month))+
-    geom_point(alpha=0.3, 
-               shape=21, 
-               show.legend = T) +
-    scale_fill_viridis_c(option="G")+
-    geom_hline(yintercept = 4.16,
-               color = "black",
-               linetype  = 2)+
-    stat_smooth(method = "loess",
-                col="red")+
-    theme_bw()+ 
-    facet_wrap(.~ID)+
-    theme(axis.text.x = element_text(angle = 90, hjust = 2))+
-    guides(fill = guide_legend(reverse=F))+
-    
-    ylab("") +
-    xlab("") 
-lentraplot
-
-```
-histogram length data
-
-
-```{r}
-jzstrata <- ggplot(sf4 %>% 
-               filter(Year>2000,
-                      ID !="Outer"),
-             aes(x=length_total_cm, 
-                 y = as.factor(Year), 
-                 fill=ID))+
-  geom_density_ridges(stat = "binline", bins = 30, 
-                      scale = 1.9, 
-                      draw_baseline = FALSE,
-                      alpha=0.9)+
-  facet_wrap(.~ID, ncol=7) +   
-  geom_vline(xintercept = 3.6, color = "red")+
-  scale_x_continuous(breaks = seq(from = 1, to = 10, 
-                                  by = 2))+
-  scale_y_discrete(breaks = seq(from = 2000, 
-                                to = 2020, by = 1))+
-  scale_fill_viridis_d(name="Strata",
-                       option="F")+
-  theme_minimal()+
-  xlab("Length (cm.)")+
-  ylab("")
-jzstrata
-```
-
-Violin plot by strata
-
-```{r}
-
-viostra <- ggplot(sf4 %>% 
-               filter(Year>2000,
-                      ID !="Outer"),
-             aes(x=length_total_cm, 
-                 y = as.factor(Year), 
-                 fill=ID))+
-  scale_fill_viridis_d(name="Strata",
-                       option="F")+
-  geom_violin(alpha=0.8)+
-  geom_boxplot(width=0.1,
-               outlier.shape = NA,
-               show.legend = FALSE)+
-  geom_vline(xintercept = 3.6, color = "red")+
-  facet_wrap(.~ID, ncol=7) + 
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 90, 
-                                   hjust = 1))+
-  ylab("")+
-  xlab("Length (cm.)")
-viostra
-
-```
-
-maps length
-
-```{r}
-glstrata <- ggplot() +
-   geom_sf(data=sf3%>% 
-             drop_na(tapro) %>% 
-               filter(Year>1999,
-                      ID !="Outer"),
-           aes(fill = tapro), 
-           color=NA) +
-  scale_fill_viridis_b(option="C",
-                       name="cm.",
-                       breaks = seq(0,6,0.5),
-                       direction=-1)+
-  geom_sf(data = strata, fill=NA, col=2)+
-  geom_sf(data = coast2, colour="black", fill="grey")+
-  facet_wrap(~Year, ncol=6)+
-  theme(panel.background = element_rect(fill = 'aliceblue'),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())+
-  # ylim(-70, -60)+
-  # xlim(-70, -50)
-  # another kind projection
-  ylim(230000, 2220000)+
-  xlim(-3095349 , -1858911)+
-  #coord_sf(crs = 32610)+ #sistema de prpyecccion para campos completos
-  coord_sf(crs = 6932)+
-  labs(title = "Mean Length Krill by Strata and Year")
-glstrata
-```
-
-Prepare template length data by strata for posterior analysis like "Intrinsic Productivity". We can found this in this [link](https://github.com/MauroMardones/LBSPR_Krill)
-
-#### Grouping by strata
-
-```{r eval=FALSE, echo=TRUE}
-# Maybe this could be a loop , but i didnt find the way...
-# Elephan Island
-ei <- sf4 %>% 
-  drop_na(length_total_cm) %>% 
-  filter(ID== "EI")  
-# cut in order
-ei$catlon <- cut(x = ei$length_total_cm, 
-                 breaks = seq(0,7,0.2),
-                 labels = seq(0,6.8,0.2),
-                 right = FALSE)
-
-eit <- table(ei$Year, ei$catlon)
-eit1 <-t(as.data.frame.matrix(eit)); class(eit1)
-
-
-# SSIW
-ssiw <- sf4 %>% 
-  drop_na(length_total_cm) %>% 
-  filter(ID== "SSIW")  
-# cut in order
-ssiw$catlon <- cut(x = ssiw$length_total_cm, 
-                 breaks = seq(0,7,0.2),
-                 labels = seq(0,6.8,0.2),
-                 right = FALSE)
-
-ssiwt <- table(ssiw$Year, ssiw$catlon)
-ssiwt1 <-t(as.data.frame.matrix(ssiwt)); class(ssiwt1)
-
-# BS
-bs <- sf4 %>% 
-  drop_na(length_total_cm) %>% 
-  filter(ID== "BS")  
-# cut in order
-bs$catlon <- cut(x = bs$length_total_cm, 
-                 breaks = seq(0,7,0.2),
-                 labels = seq(0,6.8,0.2),
-                 right = FALSE)
-
-bst <- table(bs$Year, bs$catlon)
-bst1 <-t(as.data.frame.matrix(bst)); class(bst1)
-
-# JOIN  (very poor data, just a couple years)
-join <- sf4 %>% 
-  drop_na(length_total_cm) %>% 
-  filter(ID== "JOIN")  
-# cut in order
-join$catlon <- cut(x = join$length_total_cm, 
-                 breaks = seq(0,7,0.2),
-                 labels = seq(0,6.8,0.2),
-                 right = FALSE)
-
-joint <- table(join$Year, join$catlon)
-joint1 <-t(as.data.frame.matrix(joint)); class(joint1)
-
-# Extra
-extra <- sf4 %>% 
-  drop_na(length_total_cm) %>% 
-  filter(ID== "Extra")  
-# cut in order
-extra$catlon <- cut(x = extra$length_total_cm, 
-                 breaks = seq(0,7,0.2),
-                 labels = seq(0,6.8,0.2),
-                 right = FALSE)
-
-extrat <- table(extra$Year, extra$catlon)
-extrat1 <-t(as.data.frame.matrix(extrat)); class(extrat1)
-```
-
-Generate the files to use in intrinsic productivity analysis.
-
-```{r eval=FALSE, echo=TRUE, warning=FALSE}
-# A su vez puedo generar el archivo por separado
-write.csv(eit1, "lenghtEI.csv", sep = ",", row.names = TRUE)
-write.csv(ssiwt1, "lenghtSSIW.csv", sep = ",", row.names = TRUE)
-write.csv(bst1, "lenghtBS.csv", sep = ",", row.names = TRUE)
-write.csv(joint1, "lenghtJOIN.csv", sep = ",", row.names = TRUE)
-write.csv(extrat1, "lenghtExtra.csv", sep = ",", row.names = TRUE)
-
-```
-
-
-## Environmental data
-
-Load environmental data to merge with length.
-
-
-```{r echo=FALSE}
-load("~/DOCAS/Data/KrillLows/DataEnvKrill.RData")
-```
-
-Get data specific object
-
-```{r include=FALSE}
-ls()
-get("dataenvf")
-```
-
-Join length and environental data by `cellid` and `Year` with a reduce DB.
-
-```{r}
-class(dataenvf)
-
-envgru <- dataenvf %>%
-  dplyr::select(1, 2, 3, 6, 9) %>% 
-  drop_na(ANO.x) %>% 
-  dplyr::rename(Year=ANO.x) %>% 
-  dplyr::group_by(cellid,Year) %>% 
-  dplyr::summarise(meansic2=mean(meansic),
-                   meanchl2=mean(meanchl),
-                   meantsm2=mean(meantsm))
-dim(envgru)
-summary(envgru)
-
-# Test
-envgru2 <- dataenvf %>%
-  dplyr::select(1, 2, 3, 6, 9, 10) %>% 
-  drop_na(ANO.x) %>% 
-  dplyr::rename(Year=ANO.x) %>% 
-  dplyr::group_by(cellid,Year, geometry) %>% 
-  dplyr::summarise(meansic2=mean(meansic),
-                   meanchl2=mean(meanchl),
-                   meantsm2=mean(meantsm))
-```
-
-Join merge object in a new data base.
-
-```{r}
-names(grilen3)
-names(envgru)
-envlen <- merge(grilen3, envgru, 
-                 by = c("cellid", "Year"))
-# change names
-
-envname <- envlen %>% 
-  dplyr::rename(Length=lepro,
-         SIC=meansic2,
-         CHla=meanchl2,
-         SSM=meantsm2)
-head(envname)
-```
-
-# Results
-
-## GLM Length-Environmental
-
-Debo trabajar ciertos componentes de los datos para poder hacer el
-analisis bajo supuestos estructurales.
-
--   Comprobar distribución de Longitudes medias de krill
--   Cambiar a factor `Year` y `cellid`
--   Filtrar datos `NA`
--   Filtrar outliers en datos ambientales
-
-### Test Correlation
-
-Test de comportamiento de la variable de longitudes `lenpro` mediante 2
-test; 1) Shapiro-Wilk `shapiro.test()` y Kolmogorov-Smirnov `ks.test()`
-
-```{r}
-shapiro.test(envname$Length)
-ks.test(envname$Length, "pnorm", mean(envname$Length), sd(envname$Length))
-tal<-ggplot(envname, aes(x=Length)) + 
-  geom_histogram(color="red", fill="white")+
-  theme_minimal()+
-  labs(x="Length Mean Krill (cm.)",
-       y="Frecuency")
-tal
-```
-
-### Cambiar a factor `Year` y `cellid`
-
-```{r}
-envname$Year<-as.factor(envname$Year)
-envname$cellid<-as.factor(envname$cellid)
-glimpse(envname)
-```
-
-### Filtrar datos `NA` if we have. Test
-
-```{r}
-# Are there missing values?
-colSums(is.na(envname))
-```
-
-### Filter outliers environmental and biological data
-
-Test trought plot all variables in `envlen` object
-
-```{r}
-boxsic <- ggplot(envname)+
-  geom_boxplot(aes(Year, SIC),
-               outlier.colour = "red")+
-  ylim(0,50)+
-  theme_minimal()
-boxtsm <- ggplot(envname)+
-  geom_boxplot(aes(Year, SSM-270),
-               outlier.colour = "red")+
-  labs(y="TSM")+
-  theme_minimal()
-boxchl <- ggplot(envname)+
-  geom_boxplot(aes(Year, CHla),
-               outlier.colour = "red")+
-  theme_minimal()
-ggarrange(boxsic, boxtsm, boxchl, nrow = 3)
-
-```
-
-is necessary get off outliers from Sea ice index. Get environmental
-outliers data and again...
-
-```{r warning=F, message=FALSE}
-envlen2 <- envlen %>% 
-  filter(meansic2<100)
-
-#plot 2
-         
-boxsic2 <- ggplot(envlen2)+
-  geom_boxplot(aes(Year, meansic2),
-               outlier.colour = "red")+
-  theme_minimal()
-boxtsm2 <- ggplot(envlen2)+
-  geom_boxplot(aes(Year, meantsm2),
-               outlier.colour = "red")+
-  theme_minimal()
-boxchl2 <- ggplot(envlen2)+
-  geom_boxplot(aes(Year, meanchl2),
-               outlier.colour = "red")+
-  theme_minimal()
-
-p<-ggplot(envlen2, aes(x=meansic2)) + 
-  geom_histogram(color="black", fill="white")+
-  theme_minimal()
-
-q<-ggplot(envlen2, aes(x=meantsm2)) + 
-  geom_histogram(color="black", fill="white")+
-  theme_minimal()
-
-t<-ggplot(envlen2, aes(x=meanchl2)) + 
-  geom_histogram(color="black", fill="white")+
-  theme_minimal()
-
-ggarrange(boxsic2, boxtsm2, boxchl2, p, q, t, nrow = 2, ncol=3)
-```
-
-## Correlation Analysis
-
-## Simple correlation identification toget information about variables
-
-Firts filter in our dataframe `envlen3`.
-
-Regarding difference between `Spearman` and `pearson`, both, the
-Spearman test and the Pearson test are statistical methods used to
-assess the correlation between two variables. The main difference
-between them is that the Pearson test evaluates the linear correlation
-between two continuous variables, while the Spearman test evaluates the
-monotonic correlation between two continuous or order variables.
-
-In the case of the Pearson test, the degree of association between two
-continuous variables is measured through a correlation coefficient that
+The Pearson test are statistical methods used to assess the correlation between two variables. The Pearson test evaluates the linear correlation between two continuous variables. In the case of the Pearson test, the degree of association between two continuous variables is measured through a correlation coefficient that
 varies between -1 and 1. A value of 1 indicates a perfectly positive
 correlation, a value of -1 indicates a perfectly negative correlation,
-and a value of 0 indicates no correlation between the two variables.
-
-On the other hand, the Spearman test is based on the range of the
-variables, instead of the actual values. In other words, this test
-evaluates the correlation between two order variables, where the values
-of each variable are ranked from lowest to highest, and ranges are used
-instead of actual values. Spearman's correlation coefficient also varies
-between -1 and 1, but it measures the monotonic correlation between two
-variables, that is, if one variable increases, the other variable also
-increases or decreases[@McCulloch2001].
-
-In summary, the main difference between the Spearman test and the
-Pearson test is that the former is used to assess the monotonic
-correlation between two order variables, while the latter is used to
-assess the linear correlation between two continuous variables.
-
--   Spearman's Rank Correlation Coefficient
-
-This coefficient is used to see if there is any significant relationship
-between the two datasets, and operates under the assumption that the
-data being used is ordinal, which here means that the numbers do not
-indicate quantity, but rather they signify a position of place of the
-subject's standing (e.g. 1st, 2nd, 3rd, etc.)
-
-$\begin{aligned} r_s = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^n (x_i - \bar{x})^2}\sqrt{\sum_{i=1}^n (y_i - \bar{y})^2}} \end{aligned}$
+and a value of 0 indicates no correlation between the two variables [@McCulloch2001].
 
 -   Pearson Product-Moment Coefficient
 
@@ -960,201 +186,66 @@ why this coefficient is the first formula researchers try.
 
 $\begin{aligned} r = 1- \frac{6\sum_{i=1}^n D_{i}^n}{n (n^2 - 1)}\end{aligned}$
 
-(Is posible report outpus by @Report2023)
 
 ```{r}
-# change to data frame
-envlen3 <- as.data.frame(envlen2)
-envlen4 <- envlen3 %>% 
-  dplyr::select(3, 4, 5, 6)
-```
-
-Plot to show correlation trough different ways. First, the matri
-correlation
-
-```{r}
-kableExtra::kable(cor(envlen4)) %>% 
-  kable_styling()
-# covariance matrix
-kableExtra::kable(cov(envlen4)) %>% 
-  kable_styling()
+data_corr <- data_large2 %>% 
+  dplyr::select(-ID, -ANO) %>%  # Elimina las variables categóricas
+  cor(method = "pearson", 
+                 use = "complete.obs")  # Calcula la correlación excluyendo NA
 ```
 
 
-```{r message=FALSE, warning=FALSE}
-pairs.panels(envlen4 %>% 
-               dplyr::rename(Length=lepro,
-         SIC=meansic2,
-         CHla=meanchl2,
-         SSM=meantsm2),
-             smooth = TRUE,      
-             scale = FALSE,      
-             density = TRUE,     
-             ellipses = TRUE,  
-             method = "pearson",
-             pch = 21,           
-             lm = FALSE,        
-             cor = TRUE,         
-             jiggle = FALSE,     
-             factor = 2,        
-             hist.col = 4,       # Color de los histogramas
-             stars = TRUE)
-```
-
-```{r message=FALSE, warning=FALSE}
-resu <- correlation(envlen4 %>%
-               dplyr::rename(Length=lepro,
-         SIC=meansic2,
-         CHla=meanchl2,
-         SSM=meantsm2))
-resu
-summary(resu, redundant=TRUE)
-
-```
-
-We can identify through a correlation matrix the data of our set,
-whether it is positive or negative. See Figure \@ref(fig:coorplot).
-
-```{r corrplot, fig.cap="Correlation Matrix", message=FALSE, warning=FALSE}
-resu %>%
-  summary(redundant = FALSE) %>%
-  plot()
-```
-
-Here we can identify the correlation that exists between krill length
-and chlorophyla (-) and krill length and SST (+)
-
-## GLM models
-
-Come back with `envlen2` object.
-
-```{r}
-names(envlen2)
-# [1] "cellid"   "Year"     "lepro"    "meansic2" "meanchl2"
-# [6] "meantsm2" "geometry"
-envlen2r <- envlen2 %>% 
-  rename(SIC = meansic2,
-         Chl = meanchl2,
-         SST = meantsm2,
-         Length = lepro)
-
-env1 <- glm(Length ~ Year,
-            data = envlen2r)
-env2 <- glm(Length ~ Year + 
-              SIC,
-            data = envlen2r)
-env3 <- glm(Length ~ Year + 
-              SIC +
-             Chl ,
-            data = envlen2r)
-env4 <- glm(Length ~ Year + 
-              SIC +
-              Chl + 
-              SST ,
-            data = envlen2r)
-#spatial component
-env5 <- glm(Length ~ Year + 
-              SIC +
-              Chl +
-              SST +
-              cellid,
-            data = envlen2r)
-```
-
-test with @Ludecke2021
-
-Table with significance level (***).
-```{r}
-#summary(env4)
-tab_model(env1, 
-          env2,
-          env3, 
-          env4, p.style = "stars")
-
+```{r Figure3, out.width='80%', fig.cap="Coorrelation plot to different variables."}
+ggcorrplot(data_corr, method = "circle", 
+           type = "lower", 
+           colors = c("green", "white", "yellow"),
+           lab = TRUE, outline.col = "white", 
+           ggtheme = theme_minimal())
 ```
 
 
-Table comparing performance model. 
-```{r warning=F}
-compare_performance(env1, 
-                    env2,
-                    env3,
-                    env4,
-                    env5,
-                    env1m,
-                    rank = TRUE, verbose = FALSE)
+The correlation matrix provides valuable insights into the relationships among the variables (Figure \@ref(fig:Figure3)):  
+
+**Sea ice (seaice)** is **negatively correlated with LENGTH (-0.339)** and **LENGTH_P75 (-0.329)**, suggesting that higher sea ice levels might be associated with smaller organism sizes.  **TSM** has a **moderate positive correlation with LENGTH (0.330) and LENGTH_P75 (0.298)**, indicating that turbidity may be linked to larger body sizes. **Chla** is **negatively correlated with LENGTH (-0.421) and LENGTH_P75 (-0.393)**, implying that areas with higher chlorophyll-a concentrations may have smaller individuals.   Based on the correlation matrix provided, the relationship between **Chla and TSM** is strong and negative (**r = -0.82**). This indicates that as **TSM increases, Chla tends to decrease**, suggesting a potential inverse relationship between these two environmental variables. Given this strong correlation, it will be necessary to account for this relationship in the GLMM models, either by:  
+
+1. Incorporating both variables separately, treating them as independent predictors.  
+2. Modeling their correlation explicitly, such as including an interaction term (**TSM and Chla**) to assess their combined effect.  
+3. Testing alternative models to evaluate whether including both variables together introduces multicollinearity issues.  
+
+By considering these approaches, we aim to capture the effects of environmental conditions on LENGTH and LENGTH_P75 while ensuring statistical robustness. These insights will help refine the **GLMM** models to better capture the environmental effects on population structure while maintaining statistical reliability. 
+
+
+## Variable Distribution
+
+To explore the distribution of numerical variables in our dataset, we conducted a histogram analysis (Figure \@ref(fig:Figure4). First, we excluded non-numeric variables (`ID`, `ANO`, `SE SPR`, and `cvto`) to focus on the remaining quantitative data. The results from this exploratory analysis provided essential insights into the characteristics of our dataset, helping to guide subsequent modeling and statistical analyses.
+
+```{r Figure4, out.width='80%', fig.cap="Distribution of numerical variables to test assumtion of regresion models"}
+data_filtered2 <- data_large2 %>%
+  dplyr::select(-ID, -ANO, -`SE SPR`, -cvto) %>%
+  pivot_longer(cols = everything(), 
+               names_to = "Variable", values_to = "Valor")
+
+ggplot(data_filtered2, aes(x = Valor)) +
+  geom_histogram(bins = 30, fill = "skyblue", color = "black", alpha = 0.7) +
+  facet_wrap(~Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Variable distribution",
+       x = "",
+       y = "Frecuency")
 ```
+To ensure independence from the assumption of normality in variable behavior, we will use **Generalized Linear Mixed Models (GLMMs)**. This approach is appropriate because GLMMs allow for **non-normal distributions** of response variables and can account for **hierarchical or grouped data structures** by incorporating random effects. In our case, GLMMs help model variations in `LENGTH` and `LENGTH_P75` while considering **both fixed effects (categorical factors like `ID`) and random effects (environmental covariates and `ANO`)**. This methodology provides **greater flexibility** compared to standard linear models, making it suitable for ecological and fisheries research where data often exhibit heteroscedasticity and non-normal distributions.
 
-Regarding this result, we can select **best model** and check some assumtion like:
+## Models
 
-- Colinealidad
-- Data points influyentes
-- Homoscedasticidad
-- Normalidad de los residuos 
-- Independencia
+To evaluate the spatial and temporal variability of krill length from fishery and its relationship with environmental covariates, we applied a series of regression models, including generalized linear models (GLMs) and general linear mixed-effects models (GLMMs). Initial GLMs were constructed to assess the fixed effects of year (ANO), spatial strata (ID), sea ice concentration, chlorophyll-a (Chla), and sea surface temperature (TSM) on krill length. To account for the hierarchical structure of the data, we incorporated random intercepts for year (ANO) and, in some models, for spatial strata (ID) using the `lme4` package in R. Interactions between ID and ANO were tested to explore whether temporal trends in krill length differed across spatial units. Model selection was based on the Akaike Information Criterion (AIC) and residual deviance, with lower values indicating better model fit. Variance inflation factors (VIF) were calculated to check for multicollinearity among environmental predictors, and when necessary, covariates were standardized or imputed to handle missing data. The inclusion of random effects allowed us to capture unexplained annual variability while accounting for spatial heterogeneity in krill growth patterns. Visualization of model predictions and marginal effects was conducted using the `ggeffects` and `sjPlot` packages [@Ludecke2024], providing insights into how krill length dynamics respond to environmental and spatial drivers over time.  
 
-In this case, is `env4`
-
-```{r fig.height=3, fig.width=3,  warning=F}
-check_model(env1)
-```
-
-```{r}
-plot(compare_performance(env1, 
-                         env2, 
-                         env3,
-                         env4,
-                         rank = TRUE),
-     name="LM to length krill data vs Env")
-```
-
-Comparative table acrosss models.
-
-```{r}
-compare_performance(env1, 
-                    env2, 
-                    env3,
-                    env4, 
-                    env5)
-
-report(env4)
-```
-
-
-```{r}
-AIC(env1)
-AIC(env2)
-AIC(env3)
-AIC(env4)
-deviance(env1)
-deviance(env2)
-deviance(env3)
-deviance(env4)
-
-library(lmtest)
-lrtest0<-lrtest(env1,env2,env3,env4)
-lrtest0
-plot_model(env4)+
-  theme_bw()
-```
-
-## GLMM models
+### GLMM models
 
 Random effects are a way to model variability in data that comes from
 factors that cannot be directly measured or controlled. In the context
 of statistical models, random effects refer to variables that are
 assumed to have an unknown probability distribution, and are included in
-the model to explain some of the variation in the data.
-
-For example, in a study comparing the test scores of students at
-different schools, random effects refer to differences between schools
-that cannot be explained by variables measured in the study, such as
-students' socioeconomic status. These differences may be caused by
-factors such as the quality of teaching, school culture, or geographic
-location.
-
-Random effects are often modeled by using mixed effects models, which
-combine random and fixed effects in the same model. Fixed effects are
+the model to explain some of the variation in the data. Random effects are often modeled by using mixed effects models, which combine random and fixed effects in the same model. Fixed effects are
 those that are assumed to be constant for all study units and are
 directly measured, while random effects are those that are assumed to
 vary randomly across study units and cannot be directly measured.
@@ -1162,203 +253,157 @@ vary randomly across study units and cannot be directly measured.
 In short, random effects are a way of modeling variability in data that
 cannot be directly explained by the variables measured in the study, and
 are included in the model to improve the precision of the estimates and
-reduce the potential for bias [@McCulloch2001].
+reduce the potential for bias [@McCulloch2001; @Bates2015].
 
-In this cae we try test spatial componenten in `cellid` variable like
-random effects with `lme4` package [@Bates2015].
+In our models, **ID represents the stratum** within the study area, and it is treated as a fixed effect. This approach assumes that each stratum has a specific and constant influence on the response variable (*LENGTH* or *LENGTH_P75*), allowing for direct estimation and comparison of its effects. By treating ID as a fixed effect, we acknowledge that each stratum possesses unique environmental and oceanographic characteristics that may impact the response variable differently. This approach contrasts with a random effects model, which would assume that the observed strata are a random sample from a larger population, estimating only the variance between them rather than their specific effects. Given that the number of strata is finite and known, and our interest lies in explicitly assessing differences among them rather than making inferences beyond the observed data, treating ID as a fixed effect is the most appropriate choice.
 
-```{r}
-env1m <- lmer(Length ~ Year + 
-            Chl + 
-             SIC + 
-             SST + (1|cellid), 
-           data = envlen2r)
+In our models, **ANO represents the temporal component** and is treated as a random effect. This approach assumes that annual variations influence the response variable (*LENGTH* or *LENGTH_P75*), but rather than estimating specific effects for each year, we model their variance as a way to account for unobserved temporal fluctuations. By treating ANO as a random effect, we acknowledge that interannual variability may be influenced by unmeasured environmental or ecological factors, reducing the risk of overfitting and allowing for more generalizable inferences. This also improves model parsimony by capturing temporal correlations without requiring individual year-specific coefficients. Since our interest lies in understanding general temporal patterns rather than estimating the fixed influence of each year, treating ANO as a random effect is the most appropriate methodological choice.
 
-env2m <- lmer(Length ~ Year + 
-            Chl + 
-             SIC + 
-             SST + (1|Year), 
-           data = envlen2r)
-```
+\[
+\text{Mod 1:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + (1 | ANO_i) + \epsilon_i
+\]
 
+\[
+\text{Mod 2:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + (1 | ANO_i) + \epsilon_i
+\]
 
-```{r }
-# graficar efectos aleatorios
-pre <- plot_model(env1m,type = "re", 
-                facet.grid=FALSE, 
-                free.scale = FALSE, 
-                title = NULL, 
-                vline.color = "darkgrey",
-                sort.est = TRUE,
-                colors = "Set1",
-                show.data = TRUE,
-                jitter = 0.2,
-                terms = "Days")+
-    theme_few()
+\[
+\text{Mod 3:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 tsm_{i} + (1 | ANO_i) + \epsilon_i
+\]
 
-pest <- plot_model(env1m,type = "est", 
-                facet.grid=FALSE, 
-                free.scale = FALSE, 
-                title = NULL, 
-                vline.color = "darkgrey",
-                sort.est = TRUE,
-                colors = "Set2",
-                show.data = TRUE,
-                jitter = 0.2)+
-  theme_few()
-```
+\[
+\text{Mod 4:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 tsm_{i} + \beta_4 seaice_{i} + (1 | ANO_i) + \epsilon_i
+\]
 
+\[
+\text{Mod 5:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 tsm_{i} + \beta_4 Chla_{i} + \beta_5 (tsm \times Chla)_{i} + (1 | ANO_i) + \epsilon_i
+\]
 
-```{r warning=FALSE, message=FALSE, include=FAlSE}
-ggarrange(pre, pest, ncol = 2)
-```
+\[
+\text{Mod 5\_P75:} \quad LENGTH\_P75_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 tsm_{i} + \beta_4 Chla_{i} + \beta_5 (tsm \times Chla)_{i} + (1 | ANO_i) + \epsilon_i
+\]
 
+This represents each model in mathematical terms, where \(\beta\) are the coefficients, \( (1 | ANO_i) \) represents the random effect of ANO, and \(\epsilon_i\) is the error term.
 
 
 ```{r}
-env_ranef <- ranef(env1m)
-summary(env_ranef)
-mean(env_ranef$cellid[, 1])
-
-report(env1m)
+data_large3 <- data_large2 %>% 
+  drop_na(LENGTH, LENGTH_P75) %>% 
+  filter(ANO > 1999) %>%
+  mutate(tsm = scale(tsm),
+         Chla = scale(Chla))
+# Modelo 1: Solo ID como efecto fijo
+mod1_L <- lmer(LENGTH ~ ID + (1 | ANO), 
+               data = data_large3, 
+               REML = FALSE)
+# Modelo 2: Agregando Sea Ice
+mod2_L <- lmer(LENGTH ~ ID + Chla + (1 | ANO), 
+               data = data_large3, 
+               REML = FALSE)
+# Modelo 3: Sumando TSM
+mod3_L <- lmer(LENGTH ~ ID + Chla+ tsm + (1 | ANO), 
+               data = data_large3, REML = FALSE)
+# Modelo 4: Sumando Chla
+mod4_L <- lmer(LENGTH ~ ID + Chla + tsm + seaice + (1 | ANO), 
+               data = data_large3, REML = FALSE)
+# Modelo 5: Interacción TSM y Chla
+mod5_L <- lmer(LENGTH ~ ID + seaice + tsm * Chla + (1 | ANO), 
+               data = data_large3, REML = FALSE)
+# Modelo 5_P75: Interacción TSM y Chla
+mod5_P75 <- lmer(LENGTH_P75 ~ ID + seaice + tsm * Chla + (1 | ANO),
+                 data = data_large3, REML = FALSE)
 ```
+
+## Results
+
 
 
 ```{r}
-library(lme4)
-library(sjPlot)
+model_comparison <- compare_performance(mod1_L, 
+                                        mod2_L, 
+                                        mod3_L,
+                                        mod4_L, 
+                                        mod5_L, 
+                                        mod5_P75,
+                                        rank = TRUE,
+                                        verbose = FALSE)
 
-env1m_Chla <- lmer(LENGTH ~ ANO + Chla + (1|ID), data = data_large2)
-env1m_tsm  <- lmer(LENGTH ~ ANO + tsm + (1|ID), data = data_large2)
+model_comparison %>%
+  kable(format = "html", 
+        digits = 3, 
+        align = "c", 
+        caption = "Model Performance Comparison") %>%
+  kable_styling(full_width = TRUE, 
+                bootstrap_options = c("striped", 
+                                      "hover", 
+                                      "condensed",
+                                      "responsive")) %>%
+  scroll_box(width = "100%", height = "400px")
+```
+The Figure \@ref(fig:Figure5) show graphically the performance in the models.
 
-env1 <- glm(LENGTH ~ ANO,
-            data = data_large2)
-env2 <- glm(LENGTH ~ ANO+
-               seaice,
-             data = data_large2)
-env3 <- glm(LENGTH ~ ANO+
-               seaice+
-               tsm,
-             data = data_large2)
-env4 <- glm(LENGTH ~ ID + 
-              seaice +
-              Chla + 
-              tsm ,
-            data = data_large2)
-#spatial component
-env5 <- glm(lepro ~ Year + 
-              meansic2 +
-              meanchl2 + 
-              meantsm2 +
-              cellid,
-            data = envlen2)
-
-env1m <- lmer(LENGTH ~ ID + 
-                Chla + 
-                seaice + 
-                 (1|ANO), 
-              data = data_large2)
-
-pre <- plot_model(env1m,type = "re", 
-                  facet.grid=TRUE, 
-                  free.scale = FALSE, 
-                  title = NULL, 
-                  vline.color = "darkgrey",
-                  sort.est = TRUE,
-                  colors = "Set1",
-                  show.data = TRUE,
-                  jitter = 0.2,
-                  terms = "Days")+
-  theme_minimal()
-
-pest <- plot_model(env1m,type = "est", 
-                   facet.grid=FALSE, 
-                   free.scale = FALSE, 
-                   title = NULL, 
-                   vline.color = "darkgrey",
-                   sort.est = TRUE,
-                   colors = "Set2",
-                   show.data = TRUE,
-                   jitter = 0.2)+
-  theme_minimal()
-
-ggarrange(pre, pest, ncol = 2)
-
-
-data_large4<- na.omit(data_large2)
-data_large4 <- data_large4 %>%
-  mutate(across(c(ANO, Chla, seaice, tsm), scale))
-
-library(lme4)
-model1 <- lmer(LENGTH ~ ID + ANO + Chla + seaice + tsm + (1|ANO), data = data_large4)
-summary(model1)
-
-
-model2 <- lmer(LENGTH ~ ANO + Chla + seaice + tsm + (1|ID) + (1|ANO), data = data_large4)
-summary(model2)
-
-
-tab_model(model1, show.re.var = TRUE)
-
-library(ggplot2)
-library(ggeffects)
-
-# Efecto de Año
-plot(ggpredict(model1, terms = "ANO"))
-
-# Efecto de ID
-plot(ggpredict(model1, terms = "ID"))
-
-# Efecto de Chla
-plot(ggpredict(model1, terms = "Chla"))
-
-model_null <- lm(LENGTH ~ ANO + Chla + seaice + tsm, data = data_large4) # sin efectos aleatorios
-anova(model1) # Comparación de modelos
-
-plot(model1)  # Residuos vs valores ajustados
-qqnorm(resid(model2))
-qqline(resid(model2))  # Normalidad de residuos
-
-
-model3 <- lmer(LENGTH_P75 ~ ID + ANO + Chla * tsm + seaice + (1|ANO), data = data_large4)
-summary(model3)
-
-pest <- plot_model(model3,type = "est", 
-                   facet.grid=FALSE, 
-                   free.scale = FALSE, 
-                   title = NULL, 
-                   vline.color = "darkgrey",
-                   sort.est = TRUE,
-                   colors = "Set2",
-                   show.data = TRUE,
-                   jitter = 0.2)+
-  theme_minimal()
-
-
+```{r Figure5, out.width='80%', fig.cap="Comparision the performance and quality of several models"}
+plot(compare_performance(mod1_L, 
+                    mod2_L, 
+                    mod3_L,
+                    mod4_L, 
+                    mod5_L, 
+                    mod5_P75,
+                    rank=TRUE,
+                    verbose = FALSE))
 ```
 
+In our *best model* `mod5_L` we fitted a linear mixed model (estimated using ML and nloptwrap optimizer) to
+predict `LENGTH` with `ID`, `seaice`, `tsm` and `Chla` (formula: LENGTH ~ ID + seaice + tsm * Chla). The model included ANO as random effect (formula: ~1 | ANO). The model's total explanatory power is substantial (conditional R2 = 0.82) and the part related to the fixed effects alone (marginal R2) is of 0.41. The model's intercept, corresponding to ID = BS, seaice = 0, tsm = 0 and Chla = 0, is at 5.02
+(95% CI [3.65, 6.39], t(51) = 7.36, p < .001). about colinearity, the effect of tsm × Chla is statistically non-significant and negative (beta = -0.11, 95% CI [-0.23, 7.00e-03], t(51) = -1.89, p = 0.064; Std. beta = -0.25, 95% CI [-0.52, 0.02])
+
+
+Figure \@ref(fig:Figure6) presents two panels, each illustrating different aspects of a mixed-effects model analyzing krill *LENGTH*. The left panel displays the random effects associated with interannual variability, where the x-axis represents the magnitude of the random effects, with a vertical reference line at zero indicating no effect, and the y-axis corresponds to different years from 2001 to 2020. Each point represents the estimated random effect for a given year, with horizontal error bars indicating confidence intervals. Blue points denote positive effects, while red points signify negative ones. Notably, some years, such as 2008, 2012, and 2004, show more pronounced negative effects, whereas other years exhibit relatively small variations around zero.  
+
+The right panel visualizes the estimated fixed effects of different spatial strata (ID [SSWI], ID [EI], ID [JOIN], ID [GS]) and chlorophyll-a concentration (*Chla*) on krill length. The x-axis represents the estimated effect size, with a vertical line at zero serving as a reference, while the y-axis lists the fixed effects included in the model. Each point represents the estimated coefficient for a given variable, with horizontal error bars showing confidence intervals. The results indicate that all fixed effects have a positive influence on krill length, with *Chla* and certain spatial strata showing stronger effects.  
+
+Overall, the plot suggests that krill length is influenced by both interannual variability and spatial-environmental factors. The random effects panel highlights fluctuations in krill size over time, while the fixed effects panel confirms that spatial structure and chlorophyll-a concentration play significant roles in shaping krill growth patterns. This analysis provides valuable insights into how environmental and regional factors contribute to krill population dynamics.
+
+```{r Figure6, out.width='80%', fig.cap="Comparision the performance and quality of several models"}
+pre <- plot_model(mod5_L, type = "re",  
+                  facet.grid = FALSE,  
+                  free.scale = FALSE,  
+                  title = NULL,  
+                  vline.color = "darkgrey",  
+                  sort.est = TRUE,  
+                  colors = "Set1",  
+                  show.data = TRUE,  
+                  jitter = 0.2) +  
+       theme_few()
+
+pest <- plot_model(mod2_L, type = "est",  
+                   facet.grid = FALSE,  
+                   free.scale = FALSE,  
+                   title = NULL,  
+                   vline.color = "darkgrey",  
+                   sort.est = TRUE,  
+                   colors = "Set2",  
+                   show.data = TRUE,  
+                   jitter = 0.2) +  
+        theme_few()
+
+ggarrange(pre,
+          pest,
+          ncol=2)
+```
 
 # Conclusion
 
--   On the one hand, the models with mixed effects serve to verify the
-    influence of the spatial component, in this case each cell y in
-    which the data of the dependent variable (krill sizes) and the
-    independent variable (environmental variables) were considered.
 
--   The influence of environmental variables on the sizes of the krill
-    fishery is corroborated. The environmental variable with the
-    greatest impact on krill sizes is Chlorophyll in negative terms. In
-    other words, the more chlorophyll in the environment, the sizes
-    decrease because there is greater recruitment due to the abundance
-    of substrate for the krill population.
+Our analysis aimed to explore the spatial variability in krill *LENGTH* and the 75th percentile of length (*LENGTH_P75*) while incorporating key environmental covariates, such as chlorophyll-a concentration (Chla), sea surface temperature (TSM), and sea ice cover. Using mixed-effects models, we evaluated the influence of these environmental factors on krill growth across different spatial strata (ID) while accounting for temporal variability by including year (ANO) as a random effect. The inclusion of interactions between TSM and Chla allowed us to capture potential synergistic or antagonistic effects of these variables, providing insights into how environmental variability drives size distribution across regions.  
 
--   In a way, it is proof that the krill population structure is
-    influenced not only by fishing pressure, but also by environmental
-    conditions.
+Among the tested models, **Model 5**—which includes spatial strata (ID), sea ice, and the interaction between TSM and Chla—performed best based on AIC selection criteria. This model suggests that krill growth is influenced not only by individual environmental factors but also by their interactions, which vary across spatial strata. These findings provide a solid foundation for testing different growth scenarios within the LBSPR model, allowing for a more nuanced understanding of how environmental heterogeneity shapes krill population dynamics.  
 
--   With these results, the environmental component is solidly
-    incorporated into the krill stock assessment model in the Antarctic
-    Peninsula, specifically in Subarea 48.1.
+On one hand, the mixed-effects models confirm the influence of spatial structure, where each stratum represents a distinct environmental context affecting both the dependent variable (krill sizes) and independent variables (environmental factors). This highlights the importance of considering spatial heterogeneity in growth studies.  
+
+Additionally, our results corroborate the influence of environmental variables on krill size variability. Among them, chlorophyll-a emerged as the most significant factor, with a negative effect on krill size. This suggests that higher chlorophyll concentrations lead to increased recruitment, as the greater availability of phytoplankton provides a more abundant substrate for the krill population, thereby shifting the size structure toward smaller individuals.  
+
+Overall, these findings demonstrate that krill population structure is shaped not only by fishing pressure but also by environmental conditions. By incorporating these environmental components into stock assessment models, we enhance our understanding of krill population dynamics in the Antarctic Peninsula, particularly in Subarea 48.1, and improve the ecological realism of predictive models such as LBSPR.
 
 # References
 
