@@ -29,7 +29,7 @@ editor_options:
 ---
 
 
-```{r setup1}
+```{r setup1, echo=FALSE}
 rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE,
@@ -79,28 +79,19 @@ library(tinytable)
 library(ggcorrplot)
 ```
 
+
 # Background
 
-The following document intends to carry out a complementary
-methodological analysis to correlate environmental variables with the
-population dynamics of krill (*Euphausia superba*), in this case, in spatial complexity and with a biological component like lengths from fishery monitoring.
-
-# Hypothesis
-
-The primary inquiry pertains to the environmental and  effects of distinct
-physical and oceanographic factors in the Southern Ocean on the krill
-population. Our aim is to examine the population structure via krill
-length component from fishery and determine whether any changes were driven by
-environmental factors across any of its dimensions.
+This study aims to explore the relationship between environmental variables and the population dynamics of krill (*Euphausia superba*), incorporating spatial complexity and biological components such as length data from fishery monitoring. By using mixed-effects models, we assess how environmental factors influence krill size distribution across different strata, considering both spatial and temporal scales.  
 
 # Objective
 
-The main idea of this analysis is to empirically verify the influence on the population dynamics of krill measured through length variability, which gives indications of growth variations on the temporal and spatial scale.
-Also, once the correlation and effects on the population and/or fishing
-indicators on krill have been verified, this analysis aims to have a
-time series of the environmental variable to incorporate into the stock
-assessment process. Similar work in @Wang2021 but with a longest fishery
-history.
+The primary goal of this analysis is to empirically verify the influence of environmental factors on krill population dynamics, specifically through length variability, which serves as an indicator of growth fluctuations. By identifying correlations between environmental variables and population or fishery indicators, this study also aims to establish a time series of key environmental factors for potential integration into stock assessment models. This approach follows similar methodologies to @Wang2021, but applied to a longer fishery time series.  
+
+# Hypothesis
+
+Our main research question concerns the effects of distinct physical and oceanographic factors in the Southern Ocean on krill population structure. Specifically, we examine whether environmental variability drives changes in krill length distribution within the fishery, influencing population dynamics across spatial and temporal dimensions.  
+
 
 
 # Methodology
