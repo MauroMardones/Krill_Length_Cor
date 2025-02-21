@@ -1,4 +1,4 @@
-# **Krill Length Analysis**  
+# **Krill Length Correlation Analysis**  
 
 ## **Overview**  
 This repository contains an analysis of the spatial and environmental variability in krill (*Euphausia superba*) length. The study evaluates different mixed-effects models incorporating spatial strata (ID) as a fixed effect and year (ANO) as a random effect. Environmental covariates such as chlorophyll-a (Chla), sea surface temperature (TSM), and sea ice cover are included to assess their influence on krill growth dynamics.  
