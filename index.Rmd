@@ -282,7 +282,8 @@ data_large3 <- data_large2 %>%
   drop_na(LENGTH, LENGTH_P75) %>% 
   filter(ANO > 1999) %>%
   mutate(tsm = scale(tsm),
-         Chla = scale(Chla))
+         Chla = scale(Chla),
+         seaice = scale(seaice))
 # Modelo 1: Solo ID como efecto fijo
 mod1_L <- lmer(LENGTH ~ ID + (1 | ANO), 
                data = data_large3, 
@@ -303,11 +304,12 @@ mod5_L <- lmer(LENGTH ~ ID + seaice + tsm * Chla + (1 | ANO),
 # Modelo 5_P75: Interacción TSM y Chla
 mod5_P75 <- lmer(LENGTH_P75 ~ ID + seaice + tsm * Chla + (1 | ANO),
                  data = data_large3, REML = FALSE)
+
+# Resumen del modelo
+summary(modelo)
 ```
 
 ## Results
-
-
 
 ```{r}
 model_comparison <- compare_performance(mod1_L, 
@@ -367,7 +369,7 @@ pre <- plot_model(mod5_L, type = "re",
                   jitter = 0.2) +  
        theme_few()
 
-pest <- plot_model(mod2_L, type = "est",  
+pest <- plot_model(mod5_L, type = "est",  
                    facet.grid = FALSE,  
                    free.scale = FALSE,  
                    title = NULL,  
@@ -382,13 +384,11 @@ ggarrange(pre,
           pest,
           ncol=2)
 ```
-
 # Conclusion
-
 
 Our analysis aimed to explore the spatial variability in krill *LENGTH* and the 75th percentile of length (*LENGTH_P75*) while incorporating key environmental covariates, such as chlorophyll-a concentration (Chla), sea surface temperature (TSM), and sea ice cover. Using mixed-effects models, we evaluated the influence of these environmental factors on krill growth across different spatial strata (ID) while accounting for temporal variability by including year (ANO) as a random effect. The inclusion of interactions between TSM and Chla allowed us to capture potential synergistic or antagonistic effects of these variables, providing insights into how environmental variability drives size distribution across regions.  
 
-Among the tested models, **Model 5**—which includes spatial strata (ID), sea ice, and the interaction between TSM and Chla—performed best based on AIC selection criteria. This model suggests that krill growth is influenced not only by individual environmental factors but also by their interactions, which vary across spatial strata. These findings provide a solid foundation for testing different growth scenarios within the LBSPR model, allowing for a more nuanced understanding of how environmental heterogeneity shapes krill population dynamics.  
+Among the tested models, **Model 5** which includes spatial strata (ID), sea ice, and the interaction between TSM and Chla—performed best based on AIC selection criteria. The model revealed significant annual and spatial variability in *LENGTH*, suggesting that both temporal and spatial factors play a crucial role in shaping this response variable. Among the environmental predictors, Chla exhibited a notable effect, indicating its potential influence on LENGTH, while the effects of tsm and seaice were more uncertain, with wide confidence intervals suggesting a higher degree of variability or weaker associations. Additionally, the random effects associated with ID were significant, highlighting differences among stratas that may be driven by intrinsic biological factors. These findings emphasize the importance of accounting for both fixed and random effects when analyzing variations in LENGTH over time and across individuals.
 
 On one hand, the mixed-effects models confirm the influence of spatial structure, where each stratum represents a distinct environmental context affecting both the dependent variable (krill sizes) and independent variables (environmental factors). This highlights the importance of considering spatial heterogeneity in growth studies.  
 
