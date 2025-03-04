@@ -1,8 +1,8 @@
 ---
 title: "Supporting Information 2"
-subtitle: "Spatial and temporal variability in the intrinsic productivity of Antarctic krill (Euphausia superba) along the Western Antarctic Peninsula under environmental and life history scenarios"
+subtitle: "Disparate estimates of intrinsic productivity for Antarctic krill (Euphausia superba) across small spatial scales, under a rapidly changing ocean."
 author: "Mardones, M; Jarvis Mason, E.T.;  Santa Cruz, F.; Watters, G.; Cárdenas, C.A"
-date:  "21 February, 2025"
+date:  "04 March, 2025"
 bibliography: seaice.bib
 csl: apa.csl
 link-citations: yes
@@ -281,7 +281,7 @@ In our models, **ID represents the stratum** within the study area, and it is tr
 In our models, **ANO represents the temporal component** and is treated as a random effect. This approach assumes that annual variations influence the response variable (*LENGTH* or *LENGTH_P75*), but rather than estimating specific effects for each year, we model their variance as a way to account for unobserved temporal fluctuations. By treating ANO as a random effect, we acknowledge that interannual variability may be influenced by unmeasured environmental or ecological factors, reducing the risk of overfitting and allowing for more generalizable inferences. This also improves model parsimony by capturing temporal correlations without requiring individual year-specific coefficients. Since our interest lies in understanding general temporal patterns rather than estimating the fixed influence of each year, treating ANO as a random effect is the most appropriate methodological choice.
 
 \[
-\text{Mod 1:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 1:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 \[
@@ -289,19 +289,19 @@ In our models, **ANO represents the temporal component** and is treated as a ran
 \]
 
 \[
-\text{Mod 3:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 tsm_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 3:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 SST_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 \[
-\text{Mod 4:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 tsm_{i} + \beta_4 seaice_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 4:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 SST_{i} + \beta_4 seaice_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 \[
-\text{Mod 5:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 tsm_{i} + \beta_4 Chla_{i} + \beta_5 (tsm \times Chla)_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 5:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 SST_{i} + \beta_4 Chla_{i} + \beta_5 (SST \times Chla)_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 \[
-\text{Mod 5\_P75:} \quad LENGTH\_P75_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 tsm_{i} + \beta_4 Chla_{i} + \beta_5 (tsm \times Chla)_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 5\_P75:} \quad LENGTH\_P75_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 SST_{i} + \beta_4 Chla_{i} + \beta_5 (SST \times Chla)_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 This represents each model in mathematical terms, where \(\beta\) are the coefficients, \( (1 | ANO_i) \) represents the random effect of ANO, and \(\epsilon_i\) is the error term.
@@ -313,7 +313,8 @@ data_large3 <- data_large2 %>%
   drop_na(LENGTH, LENGTH_P75) %>% 
   filter(ANO > 1999) %>%
   mutate(tsm = scale(tsm),
-         Chla = scale(Chla))
+         Chla = scale(Chla),
+         seaice = scale(seaice))
 # Modelo 1: Solo ID como efecto fijo
 mod1_L <- lmer(LENGTH ~ ID + (1 | ANO), 
                data = data_large3, 
@@ -337,8 +338,6 @@ mod5_P75 <- lmer(LENGTH_P75 ~ ID + seaice + tsm * Chla + (1 | ANO),
 ```
 
 ## Results
-
-
 
 
 ``` r
@@ -505,7 +504,7 @@ pre <- plot_model(mod5_L, type = "re",
                   jitter = 0.2) +  
        theme_few()
 
-pest <- plot_model(mod2_L, type = "est",  
+pest <- plot_model(mod5_L, type = "est",  
                    facet.grid = FALSE,  
                    free.scale = FALSE,  
                    title = NULL,  
@@ -525,13 +524,11 @@ ggarrange(pre,
 <img src="index_files/figure-html/Figure6-1.jpeg" alt="Comparision the performance and quality of several models" width="80%" />
 <p class="caption">(\#fig:Figure6)Comparision the performance and quality of several models</p>
 </div>
-
 # Conclusion
-
 
 Our analysis aimed to explore the spatial variability in krill *LENGTH* and the 75th percentile of length (*LENGTH_P75*) while incorporating key environmental covariates, such as chlorophyll-a concentration (Chla), sea surface temperature (TSM), and sea ice cover. Using mixed-effects models, we evaluated the influence of these environmental factors on krill growth across different spatial strata (ID) while accounting for temporal variability by including year (ANO) as a random effect. The inclusion of interactions between TSM and Chla allowed us to capture potential synergistic or antagonistic effects of these variables, providing insights into how environmental variability drives size distribution across regions.  
 
-Among the tested models, **Model 5**—which includes spatial strata (ID), sea ice, and the interaction between TSM and Chla—performed best based on AIC selection criteria. This model suggests that krill growth is influenced not only by individual environmental factors but also by their interactions, which vary across spatial strata. These findings provide a solid foundation for testing different growth scenarios within the LBSPR model, allowing for a more nuanced understanding of how environmental heterogeneity shapes krill population dynamics.  
+Among the tested models, **Model 5** which includes spatial strata (ID), sea ice, and the interaction between TSM and Chla—performed best based on AIC selection criteria. The model revealed significant annual and spatial variability in *LENGTH*, suggesting that both temporal and spatial factors play a crucial role in shaping this response variable. Among the environmental predictors, Chla exhibited a notable effect, indicating its potential influence on LENGTH, while the effects of tsm and seaice were more uncertain, with wide confidence intervals suggesting a higher degree of variability or weaker associations. Additionally, the random effects associated with ID were significant, highlighting differences among stratas that may be driven by intrinsic biological factors. These findings emphasize the importance of accounting for both fixed and random effects when analyzing variations in LENGTH over time and across individuals.
 
 On one hand, the mixed-effects models confirm the influence of spatial structure, where each stratum represents a distinct environmental context affecting both the dependent variable (krill sizes) and independent variables (environmental factors). This highlights the importance of considering spatial heterogeneity in growth studies.  
 
