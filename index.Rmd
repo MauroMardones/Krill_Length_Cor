@@ -251,7 +251,7 @@ In our models, **ID represents the stratum** within the study area, and it is tr
 In our models, **ANO represents the temporal component** and is treated as a random effect. This approach assumes that annual variations influence the response variable (*LENGTH* or *LENGTH_P75*), but rather than estimating specific effects for each year, we model their variance as a way to account for unobserved temporal fluctuations. By treating ANO as a random effect, we acknowledge that interannual variability may be influenced by unmeasured environmental or ecological factors, reducing the risk of overfitting and allowing for more generalizable inferences. This also improves model parsimony by capturing temporal correlations without requiring individual year-specific coefficients. Since our interest lies in understanding general temporal patterns rather than estimating the fixed influence of each year, treating ANO as a random effect is the most appropriate methodological choice.
 
 \[
-\text{Mod 1:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 1:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 \[
@@ -259,19 +259,19 @@ In our models, **ANO represents the temporal component** and is treated as a ran
 \]
 
 \[
-\text{Mod 3:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 tsm_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 3:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 SST_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 \[
-\text{Mod 4:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 tsm_{i} + \beta_4 seaice_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 4:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 Chla_{i} + \beta_3 SST_{i} + \beta_4 seaice_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 \[
-\text{Mod 5:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 tsm_{i} + \beta_4 Chla_{i} + \beta_5 (tsm \times Chla)_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 5:} \quad LENGTH_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 SST_{i} + \beta_4 Chla_{i} + \beta_5 (SST \times Chla)_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 \[
-\text{Mod 5\_P75:} \quad LENGTH\_P75_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 tsm_{i} + \beta_4 Chla_{i} + \beta_5 (tsm \times Chla)_{i} + (1 | ANO_i) + \epsilon_i
+\text{Mod 5\_P75:} \quad LENGTH\_P75_{i} = \beta_0 + \beta_1 ID_{i} + \beta_2 seaice_{i} + \beta_3 SST_{i} + \beta_4 Chla_{i} + \beta_5 (SST \times Chla)_{i} + (1 | YEAR_i) + \epsilon_i
 \]
 
 This represents each model in mathematical terms, where \(\beta\) are the coefficients, \( (1 | ANO_i) \) represents the random effect of ANO, and \(\epsilon_i\) is the error term.
