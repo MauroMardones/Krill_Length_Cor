@@ -2,7 +2,7 @@
 title: "Supporting Information 2"
 subtitle: "Disparate estimates of intrinsic productivity for Antarctic krill (Euphausia superba) across small spatial scales, under a rapidly changing ocean."
 author: "Mardones, M; Jarvis Mason, E.T.;  Santa Cruz, F.; Watters, G.; Cárdenas, C.A"
-date:  "04 March, 2025"
+date:  "13 March, 2025"
 bibliography: seaice.bib
 csl: apa.csl
 link-citations: yes
@@ -535,6 +535,11 @@ On one hand, the mixed-effects models confirm the influence of spatial structure
 Additionally, our results corroborate the influence of environmental variables on krill size variability. Among them, chlorophyll-a emerged as the most significant factor, with a negative effect on krill size. This suggests that higher chlorophyll concentrations lead to increased recruitment, as the greater availability of phytoplankton provides a more abundant substrate for the krill population, thereby shifting the size structure toward smaller individuals.  
 
 Overall, these findings demonstrate that krill population structure is shaped not only by fishing pressure but also by environmental conditions. By incorporating these environmental components into stock assessment models, we enhance our understanding of krill population dynamics in the Antarctic Peninsula, particularly in Subarea 48.1, and improve the ecological realism of predictive models such as LBSPR.
+
+
+# Code Repository
+
+The data, codes and another documents of this analysis can be found in the following link [Krill Length Correlations](https://github.com/MauroMardones/Krill_Length_Cor)
 
 # References
 
